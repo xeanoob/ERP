@@ -1,67 +1,62 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { verifyToken, requireRole } = require('../middleware/auth');
 
-// POST /api/sales - Record a sale with FIFO logic
-router.post('/', async (req, res) => {
+// POST /api/sales — Vendeur ou Manager
+router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     const client = await pool.connect();
     try {
-        const { produit_id, quantite_sortie, prix_vente_unitaire } = req.body;
+        const { produit_id, quantite_sortie, prix_reel } = req.body;
 
-        if (quantite_sortie <= 0 || prix_vente_unitaire < 0) {
+        if (quantite_sortie <= 0 || prix_reel < 0) {
             return res.status(400).json('Invalid quantity or price');
         }
 
         await client.query('BEGIN');
 
-        // 1. Get available lots (FIFO: Oldest first)
-        const lotsRes = await client.query(
-            'SELECT * FROM lots WHERE produit_id = $1 AND quantite_restante > 0 ORDER BY date_entree ASC FOR UPDATE',
-            [produit_id]
-        );
+        const stockRes = await client.query(`
+            SELECT * FROM (
+                SELECT s.id, s.quantite_achetee, s.prix_achat_unitaire, s.date_entree,
+                    s.quantite_achetee - COALESCE((SELECT SUM(so.quantite_sortie) FROM sortie so WHERE so.stock_id = s.id), 0) as restant
+                FROM stock s
+                WHERE s.produit_id = $1
+            ) sub
+            WHERE restant > 0
+            ORDER BY date_entree ASC
+        `, [produit_id]);
 
-        let lots = lotsRes.rows;
+        let stocks = stockRes.rows;
         let qtyNeeded = parseFloat(quantite_sortie);
-        let totalAvailable = lots.reduce((acc, lot) => acc + parseFloat(lot.quantite_restante), 0);
+        let totalAvailable = stocks.reduce((acc, s) => acc + parseFloat(s.restant), 0);
 
         if (totalAvailable < qtyNeeded) {
             await client.query('ROLLBACK');
-            return res.status(400).json({ error: 'Insufficient stock', available: totalAvailable });
+            return res.status(400).json({ error: 'Stock insuffisant', available: totalAvailable });
         }
 
         const sortiesCreated = [];
 
-        // 2. Iterate and deduct
-        for (const lot of lots) {
+        for (const s of stocks) {
             if (qtyNeeded <= 0) break;
+            let qtyToTake = Math.min(parseFloat(s.restant), qtyNeeded);
 
-            let qtyToTake = 0;
-            let currentLotQty = parseFloat(lot.quantite_restante);
-
-            if (currentLotQty >= qtyNeeded) {
-                qtyToTake = qtyNeeded;
-            } else {
-                qtyToTake = currentLotQty;
-            }
-
-            // Update Lot
-            await client.query(
-                'UPDATE lots SET quantite_restante = quantite_restante - $1 WHERE id = $2',
-                [qtyToTake, lot.id]
-            );
-
-            // Create Sortie Record
             const sortieRes = await client.query(
-                'INSERT INTO sorties (lot_id, quantite_sortie, prix_vente_unitaire) VALUES($1, $2, $3) RETURNING *',
-                [lot.id, qtyToTake, prix_vente_unitaire]
+                'INSERT INTO sortie (stock_id, quantite_sortie, prix_reel) VALUES($1, $2, $3) RETURNING *',
+                [s.id, qtyToTake, prix_reel]
             );
 
             sortiesCreated.push(sortieRes.rows[0]);
             qtyNeeded -= qtyToTake;
         }
 
+        await client.query(
+            'UPDATE produit SET quantite_stock = quantite_stock - $1 WHERE id = $2',
+            [quantite_sortie, produit_id]
+        );
+
         await client.query('COMMIT');
-        res.json({ message: 'Sale recorded successfully', details: sortiesCreated });
+        res.json({ message: 'Vente enregistrée', details: sortiesCreated });
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -72,16 +67,16 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET /api/sales/history - Get recent sales
-router.get('/history', async (req, res) => {
+// GET /api/sales/history - Vendeur ou Manager
+router.get('/history', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     try {
         const query = `
-            SELECT s.*, l.produit_id, p.nom as produit_nom, l.prix_achat_unitaire
-            FROM sorties s
-            JOIN lots l ON s.lot_id = l.id
-            JOIN produits p ON l.produit_id = p.id
-            ORDER BY s.date_sortie DESC
-            LIMIT 50
+            SELECT so.*, s.produit_id, p.nom as produit_nom, s.prix_achat_unitaire
+            FROM sortie so
+            JOIN stock s ON so.stock_id = s.id
+            JOIN produit p ON s.produit_id = p.id
+            ORDER BY so.date_sortie DESC
+            LIMIT 100
         `;
         const result = await pool.query(query);
         res.json(result.rows);

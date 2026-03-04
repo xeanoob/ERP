@@ -16,10 +16,14 @@ const path = require('path');
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Import routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/lots', require('./routes/lots'));
 app.use('/api/sales', require('./routes/sales'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/fournisseurs', require('./routes/fournisseurs'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/categories', require('./routes/categories'));
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.

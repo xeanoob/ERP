@@ -1,109 +1,120 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { ShoppingCart, Plus, Trash2, CheckCircle2 } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api';
 
 const Sorties = () => {
     const [products, setProducts] = useState([]);
-    const [sale, setSale] = useState({ produit_id: '', quantite_sortie: '', prix_vente_unitaire: '' });
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const [loading, setLoading] = useState(true);
+    const [form, setForm] = useState({ produit_id: '', quantite_sortie: '', prix_reel: '' });
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
-        fetchProducts();
+        fetchData();
     }, []);
 
-    const fetchProducts = async () => {
+    const fetchData = async () => {
         try {
-            const res = await axios.get(`${API_URL}/products`);
-            setProducts(res.data);
-        } catch (err) { console.error(err); }
+            const resProd = await axios.get(`${API_URL}/products`);
+            setProducts(resProd.data.data);
+            setLoading(false);
+        } catch (err) { console.error(err); setLoading(false); }
     };
 
-    const handleSale = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage({ type: '', text: '' });
         try {
-            await axios.post(`${API_URL}/sales`, sale);
-            setMessage({ type: 'success', text: 'Vente validée et stock déduit.' });
-            setSale({ produit_id: '', quantite_sortie: '', prix_vente_unitaire: '' });
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+            await axios.post(`${API_URL}/sales`, form);
+            setForm({ produit_id: '', quantite_sortie: '', prix_reel: '' });
+            setMessage('Vente enregistrée avec succès !');
+            setTimeout(() => setMessage(''), 3000);
+            fetchData();
         } catch (err) {
-            console.error(err);
-            setMessage({
-                type: 'error',
-                text: err.response?.data?.error || 'Erreur lors de la vente'
-            });
+            alert(err.response?.data?.error || 'Erreur lors de la vente');
         }
     };
 
     return (
-        <div className="max-w-xl mx-auto flex flex-col gap-6">
-
-            <div>
-                <h2 className="text-lg font-semibold text-gray-900">Nouvelle Vente</h2>
-                <p className="text-sm text-gray-500">Enregistrer une expédition client et déduire les lots du stock (FIFO).</p>
+        <div className="max-w-4xl mx-auto flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-900 font-mono tracking-tight uppercase">Nouvelle Vente</h2>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Enregistrement d'une transaction directe</p>
+                </div>
+                {message && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-bold animate-in fade-in duration-300">
+                        <CheckCircle2 className="w-4 h-4" /> {message}
+                    </div>
+                )}
             </div>
 
             <div className="pro-card p-6">
-                {message.text && (
-                    <div className={`px-4 py-3 mb-6 rounded-md text-sm font-medium border ${message.type === 'success'
-                            ? 'bg-green-50 text-green-800 border-green-200'
-                            : 'bg-red-50 text-red-800 border-red-200'
-                        }`}>
-                        {message.text}
-                    </div>
-                )}
-
-                <form onSubmit={handleSale} className="space-y-5">
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Produit Catalogue</label>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Produit</label>
                         <select
-                            value={sale.produit_id}
-                            onChange={e => setSale({ ...sale, produit_id: e.target.value })}
                             required
-                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                            value={form.produit_id}
+                            onChange={e => {
+                                const p = products.find(x => x.id === parseInt(e.target.value));
+                                setForm({ ...form, produit_id: e.target.value, prix_reel: p?.prix_actif || '' });
+                            }}
+                            className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-medium focus:border-gray-900 focus:outline-none transition-colors"
                         >
-                            <option value="" disabled>Rechercher un produit...</option>
+                            <option value="">Sélectionner un produit...</option>
                             {products.map(p => (
-                                <option key={p.id} value={p.id}>{p.nom} ({p.categorie})</option>
+                                <option key={p.id} value={p.id} disabled={parseFloat(p.quantite_stock) <= 0}>
+                                    {p.nom} {p.variete ? `(${p.variete})` : ''} — Stock: {parseFloat(p.quantite_stock).toFixed(1)} kg
+                                </option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Volume / Poids <span className="text-gray-400 lowercase font-normal">(kg)</span></label>
-                            <input
-                                type="number" step="0.01"
-                                value={sale.quantite_sortie}
-                                onChange={e => setSale({ ...sale, quantite_sortie: e.target.value })}
-                                required
-                                placeholder="0.00"
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 text-right font-mono"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Prix de Vente <span className="text-gray-400 lowercase font-normal">(€/u)</span></label>
-                            <input
-                                type="number" step="0.01"
-                                value={sale.prix_vente_unitaire}
-                                onChange={e => setSale({ ...sale, prix_vente_unitaire: e.target.value })}
-                                required
-                                placeholder="0.00"
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 text-right font-mono"
-                            />
-                        </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Quantité (kg)</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            required
+                            value={form.quantite_sortie}
+                            onChange={e => setForm({ ...form, quantite_sortie: e.target.value })}
+                            placeholder="0.0"
+                            className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-mono focus:border-gray-900 focus:outline-none transition-colors"
+                        />
                     </div>
 
-                    <div className="pt-2">
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prix de Vente (€/kg)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            required
+                            value={form.prix_reel}
+                            onChange={e => setForm({ ...form, prix_reel: e.target.value })}
+                            placeholder="0.00"
+                            className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-mono focus:border-gray-900 focus:outline-none transition-colors"
+                        />
+                    </div>
+
+                    <div className="sm:col-span-2 pt-4">
                         <button
                             type="submit"
-                            className="w-full bg-gray-900 text-white px-4 py-2.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                            className="w-full bg-gray-900 text-white py-4 rounded font-bold uppercase tracking-widest text-xs hover:bg-black transition-all shadow-lg active:scale-[0.98]"
                         >
-                            Confirmer la Vente
+                            Valider la Transaction
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="pro-card p-4 border-l-4 border-gray-900">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction</p>
+                    <p className="text-2xl font-mono font-bold text-gray-900">
+                        {((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)} €
+                    </p>
+                </div>
             </div>
         </div>
     );

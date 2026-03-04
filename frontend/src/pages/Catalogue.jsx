@@ -1,142 +1,196 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api';
 
 const Catalogue = () => {
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [newProduct, setNewProduct] = useState({ nom: '', categorie: '', variete: '' });
+    const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
+    const [search, setSearch] = useState('');
+    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
+    const [newCat, setNewCat] = useState('');
     const [message, setMessage] = useState('');
 
-    useEffect(() => {
-        fetchProducts();
+    const fetchProducts = useCallback(async (page = 1, searchTerm = '') => {
+        try {
+            setLoading(true);
+            const res = await axios.get(`${API_URL}/products`, { params: { page, limit: 20, search: searchTerm } });
+            setProducts(res.data.data);
+            setPagination(res.data.pagination);
+            setLoading(false);
+        } catch (err) { console.error(err); setLoading(false); }
     }, []);
 
-    const fetchProducts = async () => {
+    const fetchCategories = async () => {
         try {
-            const res = await axios.get(`${API_URL}/products`);
-            setProducts(res.data);
-            setLoading(false);
-        } catch (err) {
-            console.error(err);
-            setLoading(false);
-        }
+            const res = await axios.get(`${API_URL}/categories`);
+            setCategories(res.data);
+        } catch (err) { console.error(err); }
+    };
+
+    useEffect(() => { fetchProducts(); fetchCategories(); }, [fetchProducts]);
+
+    const handleSearch = (e) => {
+        const val = e.target.value;
+        setSearch(val);
+        fetchProducts(1, val);
     };
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        if (!newProduct.nom || !newProduct.categorie) return;
+        if (!newProduct.nom || !newProduct.categorie_id) return;
         try {
             await axios.post(`${API_URL}/products`, newProduct);
-            setNewProduct({ nom: '', categorie: '', variete: '' });
-            fetchProducts();
-            setMessage('Produit ajouté avec succès');
+            setNewProduct({ nom: '', categorie_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
+            fetchProducts(pagination.page, search);
+            setMessage('Produit ajouté');
             setTimeout(() => setMessage(''), 3000);
-        } catch (err) {
-            console.error(err);
-            setMessage('Erreur lors de l\'ajout');
-        }
+        } catch (err) { console.error(err); }
+    };
+
+    const handleAddCategory = async () => {
+        if (!newCat.trim()) return;
+        try {
+            await axios.post(`${API_URL}/categories`, { nom: newCat.trim() });
+            setNewCat('');
+            fetchCategories();
+        } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Confirmer l\'archivage de ce produit ?')) return;
+        if (!window.confirm('Archiver ce produit ?')) return;
         try {
             await axios.delete(`${API_URL}/products/${id}`);
-            fetchProducts();
-        } catch (err) {
-            console.error(err);
-        }
+            fetchProducts(pagination.page, search);
+        } catch (err) { console.error(err); }
     };
 
     return (
-        <div className="max-w-6xl mx-auto flex flex-col gap-6">
-
-            {/* Action Bar / Form */}
-            <div className="pro-card p-5">
+        <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
+            {/* Formulaire création */}
+            <div className="pro-card p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold text-gray-900">Nouveau Produit</h3>
                     {message && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">{message}</span>}
                 </div>
-
-                <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-4 items-end">
-                    <div className="flex-1 w-full">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Nom</label>
-                        <input
-                            type="text"
-                            value={newProduct.nom}
-                            onChange={e => setNewProduct({ ...newProduct, nom: e.target.value })}
-                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                            placeholder="Ex: Pomme Golden"
-                        />
+                <form onSubmit={handleCreate} className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="col-span-2 sm:col-span-1">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Nom *</label>
+                            <input type="text" value={newProduct.nom} onChange={e => setNewProduct({ ...newProduct, nom: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Ex: Pomme Golden" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie *</label>
+                            <div className="flex gap-1">
+                                <select value={newProduct.categorie_id} onChange={e => setNewProduct({ ...newProduct, categorie_id: e.target.value })}
+                                    className="flex-1 bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
+                                    <option value="" disabled>Choisir</option>
+                                    {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Variété</label>
+                            <input type="text" value={newProduct.variete} onChange={e => setNewProduct({ ...newProduct, variete: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Golden" />
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Prix Actif</label>
+                                <input type="number" step="0.01" value={newProduct.prix_actif} onChange={e => setNewProduct({ ...newProduct, prix_actif: e.target.value })}
+                                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="€" />
+                            </div>
+                            <div className="w-16">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Seuil</label>
+                                <input type="number" step="1" value={newProduct.seuil_alerte_stock} onChange={e => setNewProduct({ ...newProduct, seuil_alerte_stock: e.target.value })}
+                                    className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm" placeholder="10" />
+                            </div>
+                        </div>
                     </div>
-                    <div className="w-full sm:w-48">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie</label>
-                        <select
-                            value={newProduct.categorie}
-                            onChange={e => setNewProduct({ ...newProduct, categorie: e.target.value })}
-                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                        >
-                            <option value="" disabled>Sélectionner...</option>
-                            <option value="Fruits">Fruits</option>
-                            <option value="Légumes">Légumes</option>
-                            <option value="Herbes">Herbes</option>
-                        </select>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+                        <div className="flex gap-2 items-center">
+                            <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="Nouvelle catégorie..."
+                                className="bg-white border border-gray-300 rounded-md px-3 py-1.5 text-xs w-40" />
+                            <button type="button" onClick={handleAddCategory} className="text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md px-2 py-1.5 hover:bg-gray-50">+ Catégorie</button>
+                        </div>
+                        <button type="submit" className="w-full sm:w-auto bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 flex items-center justify-center transition-colors">
+                            <Plus className="w-4 h-4 mr-2" /> Ajouter
+                        </button>
                     </div>
-                    <div className="flex-1 w-full">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Variété <span className="text-gray-400 font-normal">(Optionnel)</span></label>
-                        <input
-                            type="text"
-                            value={newProduct.variete}
-                            onChange={e => setNewProduct({ ...newProduct, variete: e.target.value })}
-                            className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-                            placeholder="Ex: Golden"
-                        />
-                    </div>
-                    <button type="submit" className="w-full sm:w-auto bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 flex items-center justify-center transition-colors">
-                        <Plus className="w-4 h-4 mr-2" /> Ajouter
-                    </button>
                 </form>
             </div>
 
-            {/* Data Grid */}
-            <div className="pro-card overflow-hidden">
+            {/* Barre de recherche */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input value={search} onChange={handleSearch} placeholder="Rechercher un produit..."
+                        className="w-full bg-white border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm" />
+                </div>
+                <p className="text-xs text-gray-500">{pagination.total} produit(s) — page {pagination.page}/{pagination.totalPages}</p>
+            </div>
+
+            {/* Mobile: card layout */}
+            <div className="sm:hidden space-y-2">
+                {loading ? (
+                    <div className="pro-card px-4 py-8 text-center text-sm text-gray-500">Chargement...</div>
+                ) : products.length === 0 ? (
+                    <div className="pro-card px-4 py-8 text-center text-sm text-gray-500">Aucun produit.</div>
+                ) : products.map(p => (
+                    <div key={p.id} className="pro-card px-4 py-3 flex items-center justify-between">
+                        <div className="min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">{p.nom}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-gray-500">{p.categorie_nom || '-'}</span>
+                                {p.variete && <span className="text-xs text-gray-400">· {p.variete}</span>}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">{parseFloat(p.prix_actif || 0).toFixed(2)} € · Seuil: {p.seuil_alerte_stock ?? 10}</div>
+                        </div>
+                        <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-600 p-1 shrink-0">
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            {/* Desktop: table layout */}
+            <div className="hidden sm:block pro-card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">ID</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom du Produit</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">ID</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Variété</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix Actif</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Seuil</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right w-20">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {loading ? (
-                                <tr><td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">Chargement des données...</td></tr>
+                                <tr><td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">Chargement...</td></tr>
                             ) : products.length === 0 ? (
-                                <tr><td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">Aucun produit dans le catalogue.</td></tr>
+                                <tr><td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">Aucun produit trouvé.</td></tr>
                             ) : products.map(p => (
                                 <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-4 py-3 text-sm text-gray-500 font-mono">{p.id}</td>
                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.nom}</td>
                                     <td className="px-4 py-3 text-sm">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${p.categorie === 'Fruits'
-                                                ? 'bg-orange-50 text-orange-700 border-orange-200'
-                                                : 'bg-green-50 text-green-700 border-green-200'
-                                            }`}>
-                                            {p.categorie}
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200">
+                                            {p.categorie_nom || '-'}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{p.variete || <span className="text-gray-400">-</span>}</td>
+                                    <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">{parseFloat(p.prix_actif || 0).toFixed(2)} €</td>
+                                    <td className="px-4 py-3 text-sm text-right text-gray-500">{p.seuil_alerte_stock ?? 10}</td>
                                     <td className="px-4 py-3 text-sm text-right">
-                                        <button
-                                            onClick={() => handleDelete(p.id)}
-                                            className="text-gray-400 hover:text-red-600 transition-colors p-1 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                            title="Supprimer"
-                                        >
+                                        <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-600 transition-colors p-1 opacity-0 group-hover:opacity-100">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </td>
@@ -145,10 +199,22 @@ const Catalogue = () => {
                         </tbody>
                     </table>
                 </div>
+                {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
+                        <button disabled={pagination.page <= 1} onClick={() => fetchProducts(pagination.page - 1, search)}
+                            className="flex items-center text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronLeft className="w-4 h-4 mr-1" /> Précédent
+                        </button>
+                        <span className="text-xs text-gray-500">Page {pagination.page} / {pagination.totalPages}</span>
+                        <button disabled={pagination.page >= pagination.totalPages} onClick={() => fetchProducts(pagination.page + 1, search)}
+                            className="flex items-center text-xs font-medium text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed">
+                            Suivant <ChevronRight className="w-4 h-4 ml-1" />
+                        </button>
+                    </div>
+                )}
             </div>
-
         </div>
     );
 };
 
-export default Catalogue
+export default Catalogue;
