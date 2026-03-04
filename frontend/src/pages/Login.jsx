@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Login = () => {
     const { login } = useAuth();
@@ -14,8 +15,11 @@ const Login = () => {
         setLoading(true);
         try {
             await login(email, password);
+            toast.success('Connexion réussie !');
         } catch (err) {
-            setError(err.response?.data?.error || 'Erreur de connexion');
+            const msg = err.response?.data?.error || 'Erreur de connexion';
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }

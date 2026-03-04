@@ -42,8 +42,8 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
             let qtyToTake = Math.min(parseFloat(s.restant), qtyNeeded);
 
             const sortieRes = await client.query(
-                'INSERT INTO sortie (stock_id, quantite_sortie, prix_reel) VALUES($1, $2, $3) RETURNING *',
-                [s.id, qtyToTake, prix_reel]
+                'INSERT INTO sortie (stock_id, quantite_sortie, prix_reel, created_by) VALUES($1, $2, $3, $4) RETURNING *',
+                [s.id, qtyToTake, prix_reel, req.user.id]
             );
 
             sortiesCreated.push(sortieRes.rows[0]);

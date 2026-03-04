@@ -21,6 +21,11 @@ const Layout = ({ children }) => {
 
     const navItems = allNavItems.filter(item => item.roles.includes(user?.role));
 
+    // Items for bottom navigation on mobile
+    const bottomNavItems = navItems.filter(item =>
+        ['Dashboard', 'Catalogue', 'Ventes', 'Historique'].includes(item.label)
+    );
+
     const NavContent = () => (
         <>
             <div className="px-5 py-6 border-b border-gray-800">
@@ -92,10 +97,29 @@ const Layout = ({ children }) => {
                         <span className="capitalize">{user?.role}</span>
                     </div>
                 </header>
-                <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+                <main className={`flex-1 overflow-y-auto p-4 lg:p-8 ${mobileOpen ? 'overflow-hidden' : ''} pb-safe-nav lg:pb-8`}>
                     {children}
                 </main>
             </div>
+
+            {/* Bottom Nav for Mobile */}
+            <nav className="bottom-nav">
+                {bottomNavItems.map(item => {
+                    const Icon = item.icon;
+                    const active = location.pathname === item.path;
+                    return (
+                        <Link key={item.path} to={item.path}
+                            className={`nav-tab ${active ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                            <Icon className="w-5 h-5" />
+                            <span>{item.label}</span>
+                        </Link>
+                    );
+                })}
+                <button onClick={() => setMobileOpen(true)} className="nav-tab text-gray-400">
+                    <Menu className="w-5 h-5" />
+                    <span>Menu</span>
+                </button>
+            </nav>
         </div>
     );
 };

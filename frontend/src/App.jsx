@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -28,42 +29,18 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-      <Route path="/*" element={
-        <ProtectedRoute>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/catalogue" element={<Catalogue />} />
 
-              {/* Routes Stock / Manager */}
-              <Route path="/inventaire" element={
-                <ProtectedRoute roles={['stock', 'manager']}><Inventaire /></ProtectedRoute>
-              } />
-              <Route path="/fournisseurs" element={
-                <ProtectedRoute roles={['stock', 'manager']}><Fournisseurs /></ProtectedRoute>
-              } />
-              <Route path="/alertes" element={
-                <ProtectedRoute roles={['stock', 'manager']}><Alertes /></ProtectedRoute>
-              } />
+      {/* Protected Routes */}
+      <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+      <Route path="/catalogue" element={<ProtectedRoute><Layout><Catalogue /></Layout></ProtectedRoute>} />
+      <Route path="/inventaire" element={<ProtectedRoute roles={['stock', 'manager']}><Layout><Inventaire /></Layout></ProtectedRoute>} />
+      <Route path="/fournisseurs" element={<ProtectedRoute roles={['stock', 'manager']}><Layout><Fournisseurs /></Layout></ProtectedRoute>} />
+      <Route path="/alertes" element={<ProtectedRoute roles={['stock', 'manager']}><Layout><Alertes /></Layout></ProtectedRoute>} />
+      <Route path="/sorties" element={<ProtectedRoute roles={['vendeur', 'manager']}><Layout><Sorties /></Layout></ProtectedRoute>} />
+      <Route path="/historique" element={<ProtectedRoute roles={['vendeur', 'manager']}><Layout><Historique /></Layout></ProtectedRoute>} />
+      <Route path="/utilisateurs" element={<ProtectedRoute roles={['manager']}><Layout><Utilisateurs /></Layout></ProtectedRoute>} />
 
-              {/* Routes Vendeur / Manager */}
-              <Route path="/sorties" element={
-                <ProtectedRoute roles={['vendeur', 'manager']}><Sorties /></ProtectedRoute>
-              } />
-              <Route path="/historique" element={
-                <ProtectedRoute roles={['vendeur', 'manager']}><Historique /></ProtectedRoute>
-              } />
-
-              {/* Routes Manager Only */}
-              <Route path="/utilisateurs" element={
-                <ProtectedRoute roles={['manager']}><Utilisateurs /></ProtectedRoute>
-              } />
-
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </Layout>
-        </ProtectedRoute>
-      } />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }
@@ -72,6 +49,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <Toaster position="top-right" reverseOrder={false} />
         <AppRoutes />
       </AuthProvider>
     </Router>

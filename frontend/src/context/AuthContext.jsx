@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/api';
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -22,7 +22,9 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = async (email, mot_de_passe) => {
-        const res = await axios.post(`${API_URL}/auth/login`, { email, mot_de_passe });
+        // Trim email to avoid hidden character issues
+        const cleanEmail = email.trim();
+        const res = await axios.post(`${API_URL}/auth/login`, { email: cleanEmail, mot_de_passe });
         const { token: newToken, user: userData } = res.data;
         localStorage.setItem('erp_token', newToken);
         axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;

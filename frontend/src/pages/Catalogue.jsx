@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Plus, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Search, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/api';
 
 const Catalogue = () => {
     const [products, setProducts] = useState([]);
@@ -46,9 +49,11 @@ const Catalogue = () => {
             await axios.post(`${API_URL}/products`, newProduct);
             setNewProduct({ nom: '', categorie_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
             fetchProducts(pagination.page, search);
-            setMessage('Produit ajouté');
-            setTimeout(() => setMessage(''), 3000);
-        } catch (err) { console.error(err); }
+            toast.success('Produit ajouté avec succès');
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.error || 'Erreur lors de l\'ajout');
+        }
     };
 
     const handleAddCategory = async () => {
@@ -57,7 +62,34 @@ const Catalogue = () => {
             await axios.post(`${API_URL}/categories`, { nom: newCat.trim() });
             setNewCat('');
             fetchCategories();
-        } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+            toast.success('Catégorie ajoutée');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Erreur');
+        }
+    };
+    const exportCSV = () => {
+        const headers = ['ID', 'Nom', 'Catégorie', 'Variété', 'Stock', 'Prix Actif', 'Seuil Alerte'];
+        const rows = products.map(p => [
+            p.id,
+            p.nom,
+            p.categorie_nom || '',
+            p.variete || '',
+            p.quantite_stock,
+            p.prix_actif,
+            p.seuil_alerte_stock
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `catalogue_erp_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Export CSV généré');
     };
 
     const handleDelete = async (id) => {
@@ -65,7 +97,11 @@ const Catalogue = () => {
         try {
             await axios.delete(`${API_URL}/products/${id}`);
             fetchProducts(pagination.page, search);
-        } catch (err) { console.error(err); }
+            toast.success('Produit archivé');
+        } catch (err) {
+            console.error(err);
+            toast.error('Erreur lors de l\'archivage');
+        }
     };
 
     return (
@@ -131,13 +167,23 @@ const Catalogue = () => {
                     <input value={search} onChange={handleSearch} placeholder="Rechercher un produit..."
                         className="w-full bg-white border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm" />
                 </div>
-                <p className="text-xs text-gray-500">{pagination.total} produit(s) — page {pagination.page}/{pagination.totalPages}</p>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <p className="hidden sm:block text-xs text-gray-500 self-center mr-2">{pagination.total} produit(s) — page {pagination.page}/{pagination.totalPages}</p>
+                    <button onClick={exportCSV} className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center transition-colors">
+                        <Download className="w-4 h-4 mr-2" /> Export CSV
+                    </button>
+                </div>
             </div>
 
             {/* Mobile: card layout */}
             <div className="sm:hidden space-y-2">
                 {loading ? (
-                    <div className="pro-card px-4 py-8 text-center text-sm text-gray-500">Chargement...</div>
+                    Array(5).fill(0).map((_, i) => (
+                        <div key={i} className="pro-card px-4 py-3">
+                            <Skeleton height={20} width="60%" />
+                            <Skeleton height={14} width="40%" className="mt-2" />
+                        </div>
+                    ))
                 ) : products.length === 0 ? (
                     <div className="pro-card px-4 py-8 text-center text-sm text-gray-500">Aucun produit.</div>
                 ) : products.map(p => (
@@ -174,7 +220,17 @@ const Catalogue = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {loading ? (
-                                <tr><td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">Chargement...</td></tr>
+                                Array(5).fill(0).map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-3"><Skeleton /></td>
+                                        <td className="px-4 py-3"><Skeleton width="80%" /></td>
+                                        <td className="px-4 py-3"><Skeleton width="60%" /></td>
+                                        <td className="px-4 py-3"><Skeleton width="40%" /></td>
+                                        <td className="px-4 py-3"><Skeleton width="50%" /></td>
+                                        <td className="px-4 py-3"><Skeleton width="30%" /></td>
+                                        <td className="px-4 py-3"><Skeleton width="20%" /></td>
+                                    </tr>
+                                ))
                             ) : products.length === 0 ? (
                                 <tr><td colSpan="7" className="px-4 py-8 text-center text-sm text-gray-500">Aucun produit trouvé.</td></tr>
                             ) : products.map(p => (

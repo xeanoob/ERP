@@ -31,10 +31,23 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY p.quantite_stock ASC
         `;
 
-        const [financeRes, countsRes, alertsRes] = await Promise.all([
+        const trendQuery = `
+            SELECT 
+                d.date::date as jour,
+                COALESCE(SUM(so.quantite_sortie * so.prix_reel), 0) as revenue,
+                COALESCE(SUM(so.quantite_sortie * s.prix_achat_unitaire), 0) as cost
+            FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day') d(date)
+            LEFT JOIN sortie so ON date_trunc('day', so.date_sortie) = d.date
+            LEFT JOIN stock s ON so.stock_id = s.id
+            GROUP BY d.date
+            ORDER BY d.date ASC
+        `;
+
+        const [financeRes, countsRes, alertsRes, trendRes] = await Promise.all([
             pool.query(financeQuery),
             pool.query(countsQuery),
             pool.query(alertsQuery),
+            pool.query(trendQuery),
         ]);
 
         const stats = financeRes.rows[0];
@@ -51,6 +64,12 @@ router.get('/stats', verifyToken, async (req, res) => {
                 cost: parseFloat(stats.cost_month),
                 margin: parseFloat(stats.revenue_month) - parseFloat(stats.cost_month)
             },
+            trend: trendRes.rows.map(r => ({
+                jour: r.jour,
+                revenue: parseFloat(r.revenue),
+                cost: parseFloat(r.cost),
+                margin: parseFloat(r.revenue) - parseFloat(r.cost)
+            })),
             counts: {
                 produits: parseInt(counts.total_produits),
                 fournisseurs: parseInt(counts.total_fournisseurs),

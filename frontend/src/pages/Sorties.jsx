@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ShoppingCart, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/api';
 
 const Sorties = () => {
     const [products, setProducts] = useState([]);
@@ -27,11 +28,10 @@ const Sorties = () => {
         try {
             await axios.post(`${API_URL}/sales`, form);
             setForm({ produit_id: '', quantite_sortie: '', prix_reel: '' });
-            setMessage('Vente enregistrée avec succès !');
-            setTimeout(() => setMessage(''), 3000);
+            toast.success('Vente enregistrée avec succès !');
             fetchData();
         } catch (err) {
-            alert(err.response?.data?.error || 'Erreur lors de la vente');
+            toast.error(err.response?.data?.error || 'Erreur lors de la vente');
         }
     };
 

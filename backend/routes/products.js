@@ -47,8 +47,8 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
     try {
         const { nom, categorie_id, variete, prix_actif, seuil_alerte_stock } = req.body;
         const result = await pool.query(
-            'INSERT INTO produit (nom, categorie_id, variete, prix_actif, seuil_alerte_stock) VALUES($1, $2, $3, $4, $5) RETURNING *',
-            [nom, categorie_id || null, variete, prix_actif || 0, seuil_alerte_stock || 10]
+            'INSERT INTO produit (nom, categorie_id, variete, prix_actif, seuil_alerte_stock, created_by) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
+            [nom, categorie_id || null, variete, prix_actif || 0, seuil_alerte_stock || 10, req.user.id]
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -63,8 +63,8 @@ router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res
         const { id } = req.params;
         const { nom, categorie_id, variete, prix_actif, seuil_alerte_stock } = req.body;
         const result = await pool.query(
-            'UPDATE produit SET nom=$1, categorie_id=$2, variete=$3, prix_actif=$4, seuil_alerte_stock=$5 WHERE id=$6 RETURNING *',
-            [nom, categorie_id, variete, prix_actif, seuil_alerte_stock, id]
+            'UPDATE produit SET nom=$1, categorie_id=$2, variete=$3, prix_actif=$4, seuil_alerte_stock=$5, updated_by=$6 WHERE id=$7 RETURNING *',
+            [nom, categorie_id, variete, prix_actif, seuil_alerte_stock, req.user.id, id]
         );
         if (result.rows.length === 0) return res.status(404).json('Product not found');
         res.json(result.rows[0]);

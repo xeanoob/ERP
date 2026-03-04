@@ -31,4 +31,18 @@ body {
   .pro-card {
     @apply bg-white border border-gray-200 shadow-sm rounded-md;
   }
+
+  /* Safe area for bottom nav on mobile */
+  .pb-safe-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around h-16 z-40 lg:hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .nav-tab {
+    @apply flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors w-full h-full;
+  }
 }

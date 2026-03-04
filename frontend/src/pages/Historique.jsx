@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/api';
 
 const Historique = () => {
     const [sales, setSales] = useState([]);
@@ -21,6 +22,29 @@ const Historique = () => {
         } catch (err) { console.error(err); setLoading(false); }
     };
 
+    const exportCSV = () => {
+        const headers = ['Date', 'Produit', 'Qté (kg)', 'Prix Unitaire (€)', 'Total (€)'];
+        const rows = filtered.map(s => [
+            new Date(s.date_sortie).toLocaleString('fr-FR'),
+            s.produit_nom,
+            s.quantite_sortie,
+            s.prix_reel,
+            (parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `ventes_erp_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Export CSV généré');
+    };
+
     const filtered = sales.filter(s => {
         const matchSearch = !search ||
             s.produit_nom?.toLowerCase().includes(search.toLowerCase());
@@ -35,9 +59,14 @@ const Historique = () => {
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
-            <div>
-                <h2 className="text-lg font-semibold text-gray-900">Historique des Ventes</h2>
-                <p className="text-sm text-gray-500">Consultez et filtrez l'ensemble des transactions.</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Historique des Ventes</h2>
+                    <p className="text-sm text-gray-500">Consultez et filtrez l'ensemble des transactions.</p>
+                </div>
+                <button onClick={exportCSV} className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center transition-colors">
+                    <Download className="w-4 h-4 mr-2" /> Export CSV
+                </button>
             </div>
 
             {/* Filtres */}

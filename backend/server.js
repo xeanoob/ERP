@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 const pool = require('./db');
 
 dotenv.config();
@@ -8,8 +10,27 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// Global Rate Limiter
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes, veuillez réessayer plus tard.' }
+});
+app.use(limiter);
+
+// Specific Rate Limiter for Login
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10, // Max 10 attempts per 15 minutes
+    message: { error: 'Trop de tentatives de connexion, veuillez patienter 15 minutes.' }
+});
+app.use('/api/auth/login', loginLimiter);
 
 // Serve static files from React app
 const path = require('path');

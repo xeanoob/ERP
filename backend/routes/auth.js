@@ -3,15 +3,27 @@ const router = express.Router();
 const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { z } = require('zod');
 const { JWT_SECRET, verifyToken } = require('../middleware/auth');
+
+// Validation Schemas
+const registerSchema = z.object({
+    nom: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+    email: z.string().email("Format d'email invalide"),
+    mot_de_passe: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+    role: z.enum(['vendeur', 'stock', 'manager']).optional()
+});
+
+const loginSchema = z.object({
+    email: z.string().email("Format d'email invalide"),
+    mot_de_passe: z.string().min(1, "Mot de passe requis")
+});
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     try {
-        const { nom, email, mot_de_passe, role } = req.body;
-        if (!nom || !email || !mot_de_passe) {
-            return res.status(400).json({ error: 'Tous les champs sont requis.' });
-        }
+        const validatedData = registerSchema.parse(req.body);
+        const { nom, email, mot_de_passe, role } = validatedData;
         const existing = await pool.query('SELECT id FROM utilisateur WHERE email = $1', [email]);
         if (existing.rows.length > 0) {
             return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
@@ -24,6 +36,9 @@ router.post('/register', async (req, res) => {
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ error: err.errors[0].message });
+        }
         console.error(err.message);
         res.status(500).json({ error: 'Erreur serveur.' });
     }
@@ -32,17 +47,26 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
     try {
-        const { email, mot_de_passe } = req.body;
-        if (!email || !mot_de_passe) {
-            return res.status(400).json({ error: 'Email et mot de passe requis.' });
-        }
-        const result = await pool.query('SELECT * FROM utilisateur WHERE email = $1 AND actif = TRUE', [email]);
+        const validatedData = loginSchema.parse(req.body);
+        let { email, mot_de_passe } = validatedData;
+
+        // Robustness: trim and lowercase
+        email = email.trim().toLowerCase();
+
+        console.log(`Login attempt for: [${email}]`);
+
+        const result = await pool.query('SELECT * FROM utilisateur WHERE LOWER(email) = $1 AND actif = TRUE', [email]);
+
         if (result.rows.length === 0) {
+            console.log(`Login failed: User not found or inactive for [${email}]`);
             return res.status(401).json({ error: 'Identifiants invalides.' });
         }
+
         const user = result.rows[0];
         const isMatch = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
+
         if (!isMatch) {
+            console.log(`Login failed: Password mismatch for [${email}]`);
             return res.status(401).json({ error: 'Identifiants invalides.' });
         }
         const token = jwt.sign(
@@ -52,6 +76,9 @@ router.post('/login', async (req, res) => {
         );
         res.json({ token, user: { id: user.id, nom: user.nom, email: user.email, role: user.role } });
     } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ error: err.errors[0].message });
+        }
         console.error(err.message);
         res.status(500).json({ error: 'Erreur serveur.' });
     }
