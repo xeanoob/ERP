@@ -38,7 +38,10 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    allowedHosts: ['.loca.lt'],
+    allowedHosts: 'all',
+    hmr: {
+      clientPort: 443,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
