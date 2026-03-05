@@ -26,7 +26,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0A0A0A] flex items-center justify-center p-4 overflow-auto">
             <div className="w-full max-w-sm">
                 <div className="mb-10 text-center">
                     <h1 className="text-sm font-semibold text-white uppercase tracking-widest">Mini ERP</h1>

@@ -137,23 +137,23 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="max-w-6xl mx-auto flex flex-col gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="pro-card p-5">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Chiffre d'Affaires</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.today.revenue.toFixed(2)} €</p>
-                    <p className="text-xs text-gray-400 mt-1">Mois : {stats.month.revenue.toFixed(2)} €</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="pro-card p-4 sm:p-5">
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>
+                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.today.revenue.toFixed(2)} €</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">Mois: {stats.month.revenue.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-5">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Coût de Revient</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.today.cost.toFixed(2)} €</p>
-                    <p className="text-xs text-gray-400 mt-1">Mois : {stats.month.cost.toFixed(2)} €</p>
+                <div className="pro-card p-4 sm:p-5">
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Coût de Revient</p>
+                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.today.cost.toFixed(2)} €</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">Mois: {stats.month.cost.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-5">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Marge Nette</p>
-                    <p className="text-2xl font-semibold text-gray-900">{stats.today.margin.toFixed(2)} €</p>
-                    <p className="text-xs text-gray-400 mt-1">Mois : {stats.month.margin.toFixed(2)} €</p>
+                <div className="pro-card p-4 sm:p-5 col-span-2 sm:col-span-1">
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Marge Nette</p>
+                    <p className="text-xl sm:text-2xl font-semibold text-emerald-600 truncate">{stats.today.margin.toFixed(2)} €</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">Mois: {stats.month.margin.toFixed(2)} €</p>
                 </div>
             </div>
 

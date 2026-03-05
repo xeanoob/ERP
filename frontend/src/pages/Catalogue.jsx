@@ -147,12 +147,7 @@ const Catalogue = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-                        <div className="flex gap-2 items-center">
-                            <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="Nouvelle catégorie..."
-                                className="bg-white border border-gray-300 rounded-md px-3 py-1.5 text-xs w-40" />
-                            <button type="button" onClick={handleAddCategory} className="text-xs text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md px-2 py-1.5 hover:bg-gray-50">+ Catégorie</button>
-                        </div>
+                    <div className="flex justify-end pt-1">
                         <button type="submit" className="w-full sm:w-auto bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 flex items-center justify-center transition-colors">
                             <Plus className="w-4 h-4 mr-2" /> Ajouter
                         </button>
@@ -206,7 +201,7 @@ const Catalogue = () => {
             {/* Desktop: table layout */}
             <div className="hidden sm:block pro-card overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">ID</th>

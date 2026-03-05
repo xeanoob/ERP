@@ -84,9 +84,6 @@ const Layout = ({ children }) => {
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shrink-0">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 text-gray-500 hover:text-gray-900 -ml-1">
-                            <Menu className="w-5 h-5" />
-                        </button>
                         <h2 className="text-sm font-semibold text-gray-800 capitalize">
                             {navItems.find(n => n.path === location.pathname)?.label || 'ERP'}
                         </h2>
@@ -102,19 +99,33 @@ const Layout = ({ children }) => {
                 </main>
             </div>
 
-            {/* Bottom Nav for Mobile */}
-            <nav className="bottom-nav">
-                {bottomNavItems.map(item => {
-                    const Icon = item.icon;
-                    const active = location.pathname === item.path;
-                    return (
-                        <Link key={item.path} to={item.path}
-                            className={`nav-tab ${active ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
-                            <Icon className="w-5 h-5" />
-                            <span>{item.label}</span>
-                        </Link>
-                    );
-                })}
+            {/* Navbar Mobile (Bottom) */}
+            <nav className="bottom-nav pb-safe-nav">
+                {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
+                    <Link to="/" className={`nav-tab ${location.pathname === '/' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <LayoutDashboard className="w-5 h-5" /><span>Bord</span>
+                    </Link>
+                )}
+                {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
+                    <Link to="/catalogue" className={`nav-tab ${location.pathname === '/catalogue' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <Package className="w-5 h-5" /><span>Stock</span>
+                    </Link>
+                )}
+                {user?.role && ['vendeur', 'manager'].includes(user.role) && (
+                    <Link to="/sorties" className={`nav-tab ${location.pathname === '/sorties' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <ShoppingCart className="w-5 h-5" /><span>Ventes</span>
+                    </Link>
+                )}
+                {user?.role && ['stock', 'manager'].includes(user.role) && (
+                    <Link to="/fournisseurs" className={`nav-tab ${location.pathname === '/fournisseurs' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <Truck className="w-5 h-5" /><span>Lots</span>
+                    </Link>
+                )}
+                {user?.role === 'manager' && (
+                    <Link to="/utilisateurs" className={`nav-tab ${location.pathname === '/utilisateurs' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <Users className="w-5 h-5" /><span>Équipe</span>
+                    </Link>
+                )}
                 <button onClick={() => setMobileOpen(true)} className="nav-tab text-gray-400">
                     <Menu className="w-5 h-5" />
                     <span>Menu</span>
