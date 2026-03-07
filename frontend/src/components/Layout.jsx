@@ -88,17 +88,18 @@ const Layout = ({ children }) => {
             </aside>
 
             {/* Mobile overlay */}
-            {mobileOpen && (
-                <div className="fixed inset-0 z-50 lg:hidden">
-                    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-                    <aside className="absolute left-0 top-0 bottom-0 w-64 bg-[#111111] flex flex-col z-50 shadow-2xl">
-                        <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white p-1">
+            <div className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+                <aside className={`absolute left-0 top-0 bottom-0 w-72 bg-[#111111] flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-out transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                    <div className="flex items-center justify-between px-5 py-6 border-b border-gray-800">
+                        <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase">Menu Principal</h1>
+                        <button onClick={() => setMobileOpen(false)} className="text-gray-500 hover:text-white transition-colors">
                             <X className="w-5 h-5" />
                         </button>
-                        <NavContent />
-                    </aside>
-                </div>
-            )}
+                    </div>
+                    <NavContent />
+                </aside>
+            </div>
 
             {/* Main */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -172,35 +173,24 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Navbar Mobile (Bottom) */}
-            <nav className="bottom-nav pb-safe-nav lg:hidden">
-                {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
-                    <Link to="/" className={`nav-tab ${location.pathname === '/' ? 'text-gray-900' : 'text-gray-400'}`}>
-                        <LayoutDashboard className="w-5 h-5" /><span>Bord</span>
-                    </Link>
-                )}
-                {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
-                    <Link to="/catalogue" className={`nav-tab ${location.pathname === '/catalogue' ? 'text-gray-900' : 'text-gray-400'}`}>
-                        <Package className="w-5 h-5" /><span>Stock</span>
-                    </Link>
-                )}
-                {user?.role && ['vendeur', 'manager'].includes(user.role) && (
-                    <Link to="/sorties" className={`nav-tab ${location.pathname === '/sorties' ? 'text-gray-900' : 'text-gray-400'}`}>
-                        <ShoppingCart className="w-5 h-5" /><span>Ventes</span>
-                    </Link>
-                )}
-                {user?.role && ['stock', 'manager'].includes(user.role) && (
-                    <Link to="/fournisseurs" className={`nav-tab ${location.pathname === '/fournisseurs' ? 'text-gray-900' : 'text-gray-400'}`}>
-                        <Truck className="w-5 h-5" /><span>Lots</span>
-                    </Link>
-                )}
-                {user?.role === 'manager' && (
-                    <Link to="/utilisateurs" className={`nav-tab ${location.pathname === '/utilisateurs' ? 'text-gray-900' : 'text-gray-400'}`}>
-                        <Users className="w-5 h-5" /><span>Équipe</span>
-                    </Link>
-                )}
-                <button onClick={() => setMobileOpen(true)} className="nav-tab text-gray-400">
+            <nav className="bottom-nav pb-safe-nav lg:hidden grid grid-cols-6 items-center">
+                <Link to="/" className={`nav-tab px-1 ${location.pathname === '/' ? 'text-gray-900 border-t-2 border-gray-900' : 'text-gray-400'}`}>
+                    <LayoutDashboard className="w-5 h-5" />
+                </Link>
+                <Link to="/catalogue" className={`nav-tab px-1 ${location.pathname === '/catalogue' ? 'text-gray-900 border-t-2 border-gray-900' : 'text-gray-400'}`}>
+                    <Package className="w-5 h-5" />
+                </Link>
+                <Link to="/sorties" className={`nav-tab px-1 ${location.pathname === '/sorties' ? 'text-gray-900 border-t-2 border-gray-900' : 'text-gray-400'}`}>
+                    <ShoppingCart className="w-5 h-5" />
+                </Link>
+                <Link to="/inventaire" className={`nav-tab px-1 ${location.pathname === '/inventaire' ? 'text-gray-900 border-t-2 border-gray-900' : 'text-gray-400'}`}>
+                    <TrendingUp className="w-5 h-5" />
+                </Link>
+                <Link to="/fournisseurs" className={`nav-tab px-1 ${location.pathname === '/fournisseurs' ? 'text-gray-900 border-t-2 border-gray-900' : 'text-gray-400'}`}>
+                    <Truck className="w-5 h-5" />
+                </Link>
+                <button onClick={() => setMobileOpen(true)} className="nav-tab px-1 text-gray-400">
                     <Menu className="w-5 h-5" />
-                    <span>Menu</span>
                 </button>
             </nav>
         </div>
