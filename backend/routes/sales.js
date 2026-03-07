@@ -61,7 +61,7 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
     } catch (err) {
         await client.query('ROLLBACK');
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({ error: err.message || 'Erreur serveur.' });
     } finally {
         client.release();
     }
