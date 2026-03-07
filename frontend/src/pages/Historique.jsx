@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Filter, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import ExportMenu from '../components/ExportMenu';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -32,7 +35,11 @@ const Historique = () => {
             (parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)
         ]);
 
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        // Professional CSV with BOM and Quoting
+        const csvContent = "\uFEFF" + [headers, ...rows].map(row =>
+            row.map(cell => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(",")
+        ).join("\n");
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -43,6 +50,67 @@ const Historique = () => {
         link.click();
         document.body.removeChild(link);
         toast.success('Export CSV généré');
+    };
+
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+
+        // Header & Title
+        doc.setFontSize(22);
+        doc.setTextColor(17, 24, 39);
+        doc.text("Rapport des Ventes", 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Période: ${dateFrom || 'Début'} au ${dateTo || 'Aujourd\'hui'}`, 14, 30);
+        doc.text(`Généré le: ${dateStr}`, 14, 35);
+
+        // KPI Section (Aesthetic boxes)
+        doc.setDrawColor(229, 231, 235);
+        doc.setFillColor(249, 250, 251);
+        doc.roundedRect(14, 42, 182, 20, 2, 2, 'FD');
+
+        doc.setFontSize(9);
+        doc.setTextColor(107, 114, 128);
+        doc.text("TOTAL VENTES", 20, 50);
+        doc.text("C.A. TOTAL", 80, 50);
+        doc.text("MARGE NETTE", 140, 50);
+
+        doc.setFontSize(12);
+        doc.setTextColor(17, 24, 39);
+        doc.text(`${filtered.length}`, 20, 57);
+        doc.text(`${totalRevenue.toFixed(2)} €`, 80, 57);
+        doc.setTextColor((totalRevenue - totalCost) >= 0 ? [21, 128, 61] : [220, 38, 38]);
+        doc.text(`${(totalRevenue - totalCost).toFixed(2)} €`, 140, 57);
+
+        const tableColumn = ["Date", "Produit", "Qté (kg)", "Prix Unitaire", "Total"];
+        const tableRows = filtered.map(s => [
+            new Date(s.date_sortie).toLocaleDateString('fr-FR'),
+            s.produit_nom,
+            parseFloat(s.quantite_sortie).toFixed(1),
+            `${parseFloat(s.prix_reel).toFixed(2)} €`,
+            `${(parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)} €`
+        ]);
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 70,
+            theme: 'grid',
+            headStyles: { fillColor: [17, 24, 39], fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [249, 250, 251] },
+            margin: { top: 70 },
+            columnStyles: {
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' }
+            }
+        });
+
+        doc.save(`rapport_ventes_${new Date().toISOString().split('T')[0]}.pdf`);
+        toast.success('Rapport PDF généré');
     };
 
     const filtered = sales.filter(s => {
@@ -64,9 +132,7 @@ const Historique = () => {
                     <h2 className="text-lg font-semibold text-gray-900">Historique des Ventes</h2>
                     <p className="text-sm text-gray-500">Consultez et filtrez l'ensemble des transactions.</p>
                 </div>
-                <button onClick={exportCSV} className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center transition-colors">
-                    <Download className="w-4 h-4 mr-2" /> Export CSV
-                </button>
+                <ExportMenu onExportCSV={exportCSV} onExportPDF={exportPDF} label="Rapport / Export" />
             </div>
 
             {/* Filtres */}

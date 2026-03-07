@@ -16,7 +16,7 @@ const Layout = ({ children }) => {
         { path: '/historique', label: 'Historique', icon: Clock, roles: ['vendeur', 'manager'] },
         { path: '/fournisseurs', label: 'Fournisseurs', icon: Truck, roles: ['stock', 'manager'] },
         { path: '/alertes', label: 'Alertes', icon: Bell, roles: ['stock', 'manager'] },
-        { path: '/utilisateurs', label: 'Utilisateurs', icon: Settings, roles: ['manager'] },
+        { path: '/utilisateurs', label: 'Utilisateurs', icon: Users, roles: ['manager'] },
         { path: '/configuration', label: 'Paramètres', icon: Settings, roles: ['manager'] },
     ];
 

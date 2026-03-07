@@ -4,6 +4,9 @@ import { Plus, Trash2, Search, ChevronLeft, ChevronRight, Download } from 'lucid
 import toast from 'react-hot-toast';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import ExportMenu from '../components/ExportMenu';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -61,19 +64,23 @@ const Catalogue = () => {
     };
 
     const exportCSV = () => {
-        const headers = ['ID', 'Nom', 'Catégorie', 'Variété', 'Stock', 'Prix Actif', 'Seuil Alerte'];
+        const headers = ['ID', 'Nom', 'Catégorie', 'Taxe', 'Variété', 'Stock', 'Prix Actif (€)', 'Seuil Alerte'];
         const rows = products.map(p => [
             p.id,
             p.nom,
             p.categorie_nom || '',
-            p.taxe_nom || '',
+            p.taxe_nom ? `${p.taxe_nom} (${p.taxe_taux}%)` : '',
             p.variete || '',
             p.quantite_stock,
             p.prix_actif,
             p.seuil_alerte_stock
         ]);
 
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        // Professional CSV with BOM and Quoting
+        const csvContent = "\uFEFF" + [headers, ...rows].map(row =>
+            row.map(cell => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(",")
+        ).join("\n");
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -84,6 +91,54 @@ const Catalogue = () => {
         link.click();
         document.body.removeChild(link);
         toast.success('Export CSV généré');
+    };
+
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(17, 24, 39); // Gray-900
+        doc.text("Catalogue Produits", 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(107, 114, 128); // Gray-500
+        doc.text(`Généré le: ${dateStr}`, 14, 30);
+        doc.text(`Total produits: ${pagination.total}`, 14, 35);
+
+        const tableColumn = ["ID", "Nom", "Catégorie", "Taxe", "Variété", "Stock", "Prix (€)"];
+        const tableRows = products.map(p => [
+            p.id,
+            p.nom,
+            p.categorie_nom || '-',
+            p.taxe_nom ? `${p.taxe_taux}%` : '-',
+            p.variete || '-',
+            p.quantite_stock,
+            parseFloat(p.prix_actif || 0).toFixed(2)
+        ]);
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 45,
+            theme: 'grid',
+            headStyles: { fillColor: [17, 24, 39], fontSize: 9 }, // Gray-900 head
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [249, 250, 251] }, // Gray-50 rows
+            margin: { top: 45 },
+            didDrawPage: function (data) {
+                // Footer
+                const str = "Page " + doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                const pageSize = doc.internal.pageSize;
+                const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+                doc.text(str, data.settings.margin.left, pageHeight - 10);
+            }
+        });
+
+        doc.save(`catalogue_erp_${new Date().toISOString().split('T')[0]}.pdf`);
+        toast.success('Catalogue PDF généré');
     };
 
     const handleDelete = async (id) => {
@@ -164,9 +219,7 @@ const Catalogue = () => {
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
                     <p className="hidden sm:block text-xs text-gray-500 self-center mr-2">{pagination.total} produit(s) — page {pagination.page}/{pagination.totalPages}</p>
-                    <button onClick={exportCSV} className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center transition-colors">
-                        <Download className="w-4 h-4 mr-2" /> Export CSV
-                    </button>
+                    <ExportMenu onExportCSV={exportCSV} onExportPDF={exportPDF} />
                 </div>
             </div>
 

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Check } from 'lucide-react';
+import { Plus, Search, Check, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import ExportMenu from '../components/ExportMenu';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -83,6 +87,87 @@ const Inventaire = () => {
         if (e.key === 'Escape') setEditingSeuil(null);
     };
 
+    const exportCSV = () => {
+        const headers = ['Produit', 'Catégorie', 'Stock (kg)', 'Seuil Alerte', 'Statut', 'Prix Actif (€)'];
+        const rows = filteredStocks.map(p => {
+            const qty = parseFloat(p.quantite_stock);
+            const seuil = parseFloat(p.seuil_alerte_stock || 10);
+            const status = qty <= seuil * 0.5 ? 'CRITIQUE' : qty <= seuil ? 'BAS' : 'OK';
+            return [
+                p.nom,
+                p.categorie_nom || '',
+                qty.toFixed(1),
+                seuil.toFixed(0),
+                status,
+                parseFloat(p.prix_actif).toFixed(2)
+            ];
+        });
+
+        const csvContent = "\uFEFF" + [headers, ...rows].map(row =>
+            row.map(cell => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(",")
+        ).join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `inventaire_erp_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Export CSV généré');
+    };
+
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+
+        doc.setFontSize(22);
+        doc.setTextColor(17, 24, 39);
+        doc.text("État des Stocks (Inventaire)", 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(107, 114, 128);
+        doc.text(`Rapport généré le: ${dateStr}`, 14, 30);
+
+        const tableColumn = ["Produit", "Catégorie", "Stock", "Seuil", "Statut", "Prix"];
+        const tableRows = filteredStocks.map(p => {
+            const qty = parseFloat(p.quantite_stock);
+            const seuil = parseFloat(p.seuil_alerte_stock || 10);
+            const status = qty <= seuil * 0.5 ? 'CRITIQUE' : qty <= seuil ? 'BAS' : 'OK';
+            return [
+                p.nom,
+                p.categorie_nom || '-',
+                `${qty.toFixed(1)} kg`,
+                seuil.toFixed(0),
+                status,
+                `${parseFloat(p.prix_actif).toFixed(2)} €`
+            ];
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillColor: [17, 24, 39], fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [249, 250, 251] },
+            margin: { top: 40 },
+            didParseCell: function (data) {
+                if (data.column.index === 4 && data.cell.section === 'body') {
+                    if (data.cell.text[0] === 'CRITIQUE') doc.setTextColor(220, 38, 38);
+                    else if (data.cell.text[0] === 'BAS') doc.setTextColor(217, 119, 6);
+                    else doc.setTextColor(21, 128, 61);
+                }
+            }
+        });
+
+        doc.save(`etat_stocks_${new Date().toISOString().split('T')[0]}.pdf`);
+        toast.success('Inventaire PDF généré');
+    };
+
     const filteredStocks = stocks.filter(s => s.nom.toLowerCase().includes(search.toLowerCase()));
 
     return (
@@ -101,10 +186,13 @@ const Inventaire = () => {
                 </div>
             </div>
 
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer un produit..."
-                    className="w-full sm:w-80 bg-white border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900" />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer un produit..."
+                        className="w-full bg-white border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900" />
+                </div>
+                <ExportMenu onExportCSV={exportCSV} onExportPDF={exportPDF} />
             </div>
 
             <div className="pro-card overflow-hidden">
