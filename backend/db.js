@@ -4,7 +4,10 @@ require('dotenv').config();
 const poolConfig = process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
+        ssl: { rejectUnauthorized: false },
+        max: 10, // Max concurrent connections (Render Free/Neon limits)
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
     }
     : {
         user: process.env.DB_USER || 'postgres',
@@ -12,6 +15,9 @@ const poolConfig = process.env.DATABASE_URL
         database: process.env.DB_NAME || 'erpmarche',
         password: process.env.DB_PASSWORD || 'password',
         port: process.env.DB_PORT || 5432,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
     };
 
 const pool = new Pool(poolConfig);

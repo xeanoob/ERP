@@ -50,4 +50,14 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
+
+    // Internal keep-alive ping (helps but doesn't fully replace external pings)
+    setInterval(() => {
+        const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+        require('http').get(`${url}/`, res => {
+            console.log(`[Keep-Alive] Pinged self. Status: ${res.statusCode}`);
+        }).on('error', err => {
+            console.error(`[Keep-Alive] Ping failed:`, err.message);
+        });
+    }, 10 * 60 * 1000); // 10 minutes
 });
