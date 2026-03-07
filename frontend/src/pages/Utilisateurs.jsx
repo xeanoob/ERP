@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Plus, UserCheck, UserX, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = '/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const ROLES = [
     { value: 'vendeur', label: 'Vendeur', desc: 'Accès ventes et catalogue' },

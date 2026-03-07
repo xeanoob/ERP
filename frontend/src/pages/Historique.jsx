@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Search, Filter, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const API_URL = '/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const Historique = () => {
     const [sales, setSales] = useState([]);

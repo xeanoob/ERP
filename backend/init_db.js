@@ -4,38 +4,47 @@ const path = require('path');
 require('dotenv').config();
 
 async function initDB() {
-    // 1. Connect to 'postgres' to create the database if it doesn't exist
-    const client = new Client({
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: 'postgres',
-        password: process.env.DB_PASSWORD,
-        port: process.env.DB_PORT,
-    });
+    if (!process.env.DATABASE_URL) {
+        // 1. Connect to 'postgres' to create the database if it doesn't exist (local only)
+        const client = new Client({
+            user: process.env.DB_USER,
+            host: process.env.DB_HOST,
+            database: 'postgres',
+            password: process.env.DB_PASSWORD,
+            port: process.env.DB_PORT,
+        });
 
-    try {
-        await client.connect();
-        const res = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${process.env.DB_NAME}'`);
-        if (res.rowCount === 0) {
-            console.log(`Creating database ${process.env.DB_NAME}...`);
-            await client.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
-        } else {
-            console.log(`Database ${process.env.DB_NAME} already exists.`);
+        try {
+            await client.connect();
+            const res = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${process.env.DB_NAME}'`);
+            if (res.rowCount === 0) {
+                console.log(`Creating database ${process.env.DB_NAME}...`);
+                await client.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
+            } else {
+                console.log(`Database ${process.env.DB_NAME} already exists.`);
+            }
+        } catch (err) {
+            console.error('Error checking/creating database:', err);
+        } finally {
+            await client.end();
         }
-    } catch (err) {
-        console.error('Error checking/creating database:', err);
-    } finally {
-        await client.end();
     }
 
+    const poolConfig = process.env.DATABASE_URL
+        ? {
+            connectionString: process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false }
+        }
+        : {
+            user: process.env.DB_USER,
+            host: process.env.DB_HOST,
+            database: process.env.DB_NAME,
+            password: process.env.DB_PASSWORD,
+            port: process.env.DB_PORT,
+        };
+
     // 2. Connect to the target database and run schema
-    const pool = new Client({
-        user: process.env.DB_USER,
-        host: process.env.DB_HOST,
-        database: process.env.DB_NAME,
-        password: process.env.DB_PASSWORD,
-        port: process.env.DB_PORT,
-    });
+    const pool = new Client(poolConfig);
 
     try {
         await pool.connect();
