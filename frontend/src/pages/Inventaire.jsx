@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Search, Check, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import ExportMenu from '../components/ExportMenu';
 import toast from 'react-hot-toast';
 
@@ -146,7 +146,7 @@ const Inventaire = () => {
             ];
         });
 
-        doc.autoTable({
+        autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 40,

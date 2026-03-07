@@ -79,6 +79,24 @@ router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res
     }
 });
 
+// GET /api/products/alerts - Get products below threshold
+router.get('/alerts', verifyToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT p.id, p.nom, p.quantite_stock, p.seuil_alerte_stock, c.nom as categorie_nom
+            FROM produit p
+            LEFT JOIN categorie c ON p.categorie_id = c.id
+            WHERE p.actif = TRUE AND p.quantite_stock <= p.seuil_alerte_stock
+            ORDER BY p.nom ASC
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // DELETE /api/products/:id - Manager uniquement
 router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
     try {

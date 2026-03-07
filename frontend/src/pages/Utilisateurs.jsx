@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, UserCheck, UserX, Shield } from 'lucide-react';
+import { Plus, UserCheck, UserX, Shield, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -68,6 +68,18 @@ const Utilisateurs = () => {
             await axios.put(`${API_URL}/users/${userId}/toggle`);
             fetchUsers();
         } catch (err) { console.error(err); }
+    };
+
+    const handleDelete = async (userId) => {
+        if (!window.confirm('Supprimer définitivement cet utilisateur ?')) return;
+        try {
+            await axios.delete(`${API_URL}/users/${userId}`);
+            fetchUsers();
+            setMessage({ type: 'success', text: 'Utilisateur supprimé.' });
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        } catch (err) {
+            setMessage({ type: 'error', text: err.response?.data?.error || 'Erreur lors de la suppression' });
+        }
     };
 
     return (
@@ -194,11 +206,18 @@ const Utilisateurs = () => {
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                             {!isSelf && (
-                                                <button onClick={() => handleToggle(u.id)}
-                                                    className={`p-1.5 rounded transition-colors ${u.actif ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
-                                                    title={u.actif ? 'Désactiver' : 'Réactiver'}>
-                                                    {u.actif ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                                                </button>
+                                                <div className="flex justify-end gap-1">
+                                                    <button onClick={() => handleToggle(u.id)}
+                                                        className={`p-1.5 rounded transition-colors ${u.actif ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
+                                                        title={u.actif ? 'Désactiver' : 'Réactiver'}>
+                                                        {u.actif ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                                    </button>
+                                                    <button onClick={() => handleDelete(u.id)}
+                                                        className="p-1.5 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                        title="Supprimer">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>

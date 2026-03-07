@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingCart, TrendingUp, Truck, Users, LogOut, Bell, Settings, Clock, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +8,24 @@ const Layout = ({ children }) => {
     const location = useLocation();
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [alerts, setAlerts] = useState([]);
+    const [showNotifs, setShowNotifs] = useState(false);
+
+    const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+    const fetchAlerts = useCallback(async () => {
+        if (!user) return;
+        try {
+            const res = await axios.get(`${API_URL}/products/alerts`);
+            setAlerts(res.data);
+        } catch (err) { console.error('Error fetching alerts:', err); }
+    }, [user, API_URL]);
+
+    useEffect(() => {
+        fetchAlerts();
+        const interval = setInterval(fetchAlerts, 30000); // 30s
+        return () => clearInterval(interval);
+    }, [fetchAlerts]);
 
     const allNavItems = [
         { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['vendeur', 'stock', 'manager'] },
@@ -89,10 +108,57 @@ const Layout = ({ children }) => {
                             {navItems.find(n => n.path === location.pathname)?.label || 'ERP'}
                         </h2>
                     </div>
-                    <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
-                        <span>{user?.nom}</span>
-                        <span className="text-gray-300">·</span>
-                        <span className="capitalize">{user?.role}</span>
+                    <div className="flex items-center gap-4">
+                        {/* Notifications */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowNotifs(!showNotifs)}
+                                className={`p-2 rounded-full transition-colors relative ${alerts.length > 0 ? 'text-amber-500 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-50'}`}
+                            >
+                                <Bell className="w-5 h-5" />
+                                {alerts.length > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full border-2 border-white ring-2 ring-red-100 animate-pulse"></span>
+                                )}
+                            </button>
+
+                            {showNotifs && (
+                                <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setShowNotifs(false)}></div>
+                                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-100 z-20 py-2 max-h-[400px] overflow-y-auto">
+                                        <div className="px-4 py-2 border-b border-gray-50 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">Alertes Stock ({alerts.length})</span>
+                                            <Link to="/alertes" onClick={() => setShowNotifs(false)} className="text-[10px] text-gray-500 hover:text-gray-900 font-medium">Gérer</Link>
+                                        </div>
+                                        {alerts.length === 0 ? (
+                                            <div className="px-4 py-8 text-center text-gray-400 text-sm italic">
+                                                Aucune alerte en cours.
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-gray-50">
+                                                {alerts.map(a => (
+                                                    <Link key={a.id} to="/alertes" onClick={() => setShowNotifs(false)} className="block px-4 py-3 hover:bg-gray-50 transition-colors">
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-medium text-gray-900 truncate">{a.nom}</p>
+                                                                <p className="text-[10px] text-gray-500 truncate">{a.categorie_nom}</p>
+                                                            </div>
+                                                            <span className="text-xs font-bold text-red-600 whitespace-nowrap">{parseFloat(a.quantite_stock).toFixed(1)} kg</span>
+                                                        </div>
+                                                        <p className="text-[10px] text-amber-600 mt-1 font-medium italic">Seuil: {parseFloat(a.seuil_alerte_stock).toFixed(0)} kg</p>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 border-l border-gray-100 pl-4">
+                            <span className="font-medium text-gray-600">{user?.nom}</span>
+                            <span className="text-gray-300">·</span>
+                            <span className="capitalize">{user?.role}</span>
+                        </div>
                     </div>
                 </header>
                 <main className={`flex-1 overflow-y-auto p-4 lg:p-8 ${mobileOpen ? 'overflow-hidden' : ''} pb-safe-nav lg:pb-8`}>

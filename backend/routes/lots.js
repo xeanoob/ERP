@@ -60,6 +60,7 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
         );
         await client.query('UPDATE produit SET quantite_stock = quantite_stock + $1 WHERE id = $2', [quantite_achetee, produit_id]);
         await client.query('COMMIT');
+
         res.json(newStock.rows[0]);
     } catch (err) {
         await client.query('ROLLBACK');

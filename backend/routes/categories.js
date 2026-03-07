@@ -16,7 +16,11 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
     try {
         const { nom } = req.body;
         if (!nom) return res.status(400).json({ error: 'Le nom est requis.' });
-        const result = await pool.query('INSERT INTO categorie (nom) VALUES ($1) RETURNING *', [nom]);
+
+        const existing = await pool.query('SELECT id FROM categorie WHERE LOWER(nom) = LOWER($1) AND actif = TRUE', [nom.trim()]);
+        if (existing.rows.length > 0) return res.status(400).json({ error: 'Cette catégorie existe déjà.' });
+
+        const result = await pool.query('INSERT INTO categorie (nom) VALUES ($1) RETURNING *', [nom.trim()]);
         res.status(201).json(result.rows[0]);
     } catch (err) {
         if (err.code === '23505') return res.status(400).json({ error: 'Cette catégorie existe déjà.' });

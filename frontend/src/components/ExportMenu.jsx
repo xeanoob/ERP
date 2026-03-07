@@ -34,14 +34,14 @@ const ExportMenu = ({ onExportCSV, onExportPDF, label = "Exporter" }) => {
                             className="group flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                             <FileSpreadsheet className="mr-3 h-4 w-4 text-green-600" />
-                            <span>Exporter en CSV <span className="text-[10px] text-gray-400 ml-1">(Excel)</span></span>
+                            <span>Exporter en CSV</span>
                         </button>
                         <button
                             onClick={() => { onExportPDF(); setIsOpen(false); }}
                             className="group flex items-center w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                             <FileText className="mr-3 h-4 w-4 text-red-600" />
-                            <span>Télécharger en PDF <span className="text-[10px] text-gray-400 ml-1">(Aesthetic)</span></span>
+                            <span>Télécharger en PDF</span>
                         </button>
                     </div>
                 </div>

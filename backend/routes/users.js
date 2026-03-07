@@ -81,4 +81,20 @@ router.put('/:id/toggle', verifyToken, requireRole('manager'), async (req, res) 
     }
 });
 
+// DELETE /api/users/:id — Supprimer définitivement (manager only)
+router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (parseInt(id) === req.user.id) {
+            return res.status(400).json({ error: 'Vous ne pouvez pas vous supprimer vous-même.' });
+        }
+        const result = await pool.query('DELETE FROM utilisateur WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Utilisateur non trouvé.' });
+        res.json({ message: 'Utilisateur supprimé.' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Erreur serveur.' });
+    }
+});
+
 module.exports = router;
