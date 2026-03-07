@@ -32,10 +32,6 @@ const loginLimiter = rateLimit({
 });
 app.use('/api/auth/login', loginLimiter);
 
-// Serve static files from React app
-const path = require('path');
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
 // Import routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
@@ -46,10 +42,9 @@ app.use('/api/fournisseurs', require('./routes/fournisseurs'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/categories', require('./routes/categories'));
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
-app.get(/(.*)/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+// Health check route for Render
+app.get('/', (req, res) => {
+    res.json({ status: 'API ERP Marché is running' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
