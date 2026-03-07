@@ -178,11 +178,6 @@ const Layout = ({ children }) => {
                         <LayoutDashboard className="w-5 h-5" /><span>Bord</span>
                     </Link>
                 )}
-                <Link to="/alertes" className={`nav-tab relative ${location.pathname === '/alertes' ? 'text-gray-900' : 'text-gray-400'}`}>
-                    <Bell className="w-5 h-5" />
-                    {alerts.length > 0 && <span className="absolute top-2 right-1/2 translate-x-3 w-2 h-2 bg-red-600 rounded-full border border-white"></span>}
-                    <span>Alertes</span>
-                </Link>
                 {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
                     <Link to="/catalogue" className={`nav-tab ${location.pathname === '/catalogue' ? 'text-gray-900' : 'text-gray-400'}`}>
                         <Package className="w-5 h-5" /><span>Stock</span>
@@ -191,6 +186,16 @@ const Layout = ({ children }) => {
                 {user?.role && ['vendeur', 'manager'].includes(user.role) && (
                     <Link to="/sorties" className={`nav-tab ${location.pathname === '/sorties' ? 'text-gray-900' : 'text-gray-400'}`}>
                         <ShoppingCart className="w-5 h-5" /><span>Ventes</span>
+                    </Link>
+                )}
+                {user?.role && ['stock', 'manager'].includes(user.role) && (
+                    <Link to="/fournisseurs" className={`nav-tab ${location.pathname === '/fournisseurs' ? 'text-gray-900' : 'text-gray-400'}`}>
+                        <Truck className="w-5 h-5" /><span>Lots</span>
+                    </Link>
+                )}
+                {user?.role === 'manager' && (
+                    <Link to="/utilisateurs" className={`nav-tab ${location.pathname === '/utilisateurs' ? 'text-gray-900' : 'text-gray-400'}`}>
+                        <Users className="w-5 h-5" /><span>Équipe</span>
                     </Link>
                 )}
                 <button onClick={() => setMobileOpen(true)} className="nav-tab text-gray-400">
