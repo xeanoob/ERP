@@ -10,11 +10,11 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 const Catalogue = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [taxes, setTaxes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
     const [search, setSearch] = useState('');
-    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
-    const [newCat, setNewCat] = useState('');
+    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', taxe_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
     const [message, setMessage] = useState('');
 
     const fetchProducts = useCallback(async (page = 1, searchTerm = '') => {
@@ -27,14 +27,18 @@ const Catalogue = () => {
         } catch (err) { console.error(err); setLoading(false); }
     }, []);
 
-    const fetchCategories = async () => {
+    const fetchCategoriesAndTaxes = async () => {
         try {
-            const res = await axios.get(`${API_URL}/categories`);
-            setCategories(res.data);
+            const [catRes, taxRes] = await Promise.all([
+                axios.get(`${API_URL}/categories`),
+                axios.get(`${API_URL}/taxes`)
+            ]);
+            setCategories(catRes.data);
+            setTaxes(taxRes.data);
         } catch (err) { console.error(err); }
     };
 
-    useEffect(() => { fetchProducts(); fetchCategories(); }, [fetchProducts]);
+    useEffect(() => { fetchProducts(); fetchCategoriesAndTaxes(); }, [fetchProducts]);
 
     const handleSearch = (e) => {
         const val = e.target.value;
@@ -47,7 +51,7 @@ const Catalogue = () => {
         if (!newProduct.nom || !newProduct.categorie_id) return;
         try {
             await axios.post(`${API_URL}/products`, newProduct);
-            setNewProduct({ nom: '', categorie_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
+            setNewProduct({ nom: '', categorie_id: '', taxe_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
             fetchProducts(pagination.page, search);
             toast.success('Produit ajouté avec succès');
         } catch (err) {
@@ -56,23 +60,13 @@ const Catalogue = () => {
         }
     };
 
-    const handleAddCategory = async () => {
-        if (!newCat.trim()) return;
-        try {
-            await axios.post(`${API_URL}/categories`, { nom: newCat.trim() });
-            setNewCat('');
-            fetchCategories();
-            toast.success('Catégorie ajoutée');
-        } catch (err) {
-            toast.error(err.response?.data?.error || 'Erreur');
-        }
-    };
     const exportCSV = () => {
         const headers = ['ID', 'Nom', 'Catégorie', 'Variété', 'Stock', 'Prix Actif', 'Seuil Alerte'];
         const rows = products.map(p => [
             p.id,
             p.nom,
             p.categorie_nom || '',
+            p.taxe_nom || '',
             p.variete || '',
             p.quantite_stock,
             p.prix_actif,
@@ -121,13 +115,19 @@ const Catalogue = () => {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie *</label>
-                            <div className="flex gap-1">
-                                <select value={newProduct.categorie_id} onChange={e => setNewProduct({ ...newProduct, categorie_id: e.target.value })}
-                                    className="flex-1 bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
-                                    <option value="" disabled>Choisir</option>
-                                    {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-                                </select>
-                            </div>
+                            <select value={newProduct.categorie_id} onChange={e => setNewProduct({ ...newProduct, categorie_id: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
+                                <option value="" disabled>Choisir</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Taxe</label>
+                            <select value={newProduct.taxe_id} onChange={e => setNewProduct({ ...newProduct, taxe_id: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
+                                <option value="">(Aucune)</option>
+                                {taxes.map(t => <option key={t.id} value={t.id}>{t.nom} ({t.taux}%)</option>)}
+                            </select>
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Variété</label>
@@ -207,6 +207,7 @@ const Catalogue = () => {
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">ID</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Taxe</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Variété</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix Actif</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Seuil</th>
@@ -236,6 +237,11 @@ const Catalogue = () => {
                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200">
                                             {p.categorie_nom || '-'}
                                         </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                        {p.taxe_nom ? (
+                                            <span className="text-xs text-blue-600 font-medium">{p.taxe_nom} ({p.taxe_taux}%)</span>
+                                        ) : <span className="text-gray-400">-</span>}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{p.variete || <span className="text-gray-400">-</span>}</td>
                                     <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">{parseFloat(p.prix_actif || 0).toFixed(2)} €</td>

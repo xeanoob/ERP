@@ -12,6 +12,7 @@ import Fournisseurs from './pages/Fournisseurs';
 import Alertes from './pages/Alertes';
 import Utilisateurs from './pages/Utilisateurs';
 import Historique from './pages/Historique';
+import Configuration from './pages/Configuration';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Route path="/sorties" element={<ProtectedRoute roles={['vendeur', 'manager']}><Layout><Sorties /></Layout></ProtectedRoute>} />
       <Route path="/historique" element={<ProtectedRoute roles={['vendeur', 'manager']}><Layout><Historique /></Layout></ProtectedRoute>} />
       <Route path="/utilisateurs" element={<ProtectedRoute roles={['manager']}><Layout><Utilisateurs /></Layout></ProtectedRoute>} />
+      <Route path="/configuration" element={<ProtectedRoute roles={['manager']}><Layout><Configuration /></Layout></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>

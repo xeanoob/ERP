@@ -16,8 +16,8 @@ Application de gestion commerciale pour marché de produits frais. Suivi des sto
 
 - **Authentification** — Login JWT avec rôles (vendeur, stock, manager)
 - **Gestion Utilisateurs** — Création de comptes, changement de rôles, activation/désactivation (manager only)
-- **Catalogue Produits** — CRUD, recherche, pagination, prix actif, seuil d'alerte
-- **Catégories Dynamiques** — Ajout/suppression de catégories à la volée
+- **Catalogue Produits** — CRUD, recherche, pagination, prix actif, seuil d'alerte, taxes
+- **Configuration Unifiée** — Gestion des catégories et des taxes dans un seul espace
 - **Inventaire** — Entrées de stock liées aux fournisseurs, édition des seuils inline
 - **Ventes** — Déduction FIFO automatique, prix réel
 - **Historique des Ventes** — Filtres par date et produit, KPI en temps réel
@@ -33,14 +33,15 @@ utilisateur
 fournisseur ──┐
               ├── stock ──── sortie
 produit ──────┘
-  │
-categorie
+  │      │
+categorie  taxe
 ```
 
 | Table | Colonnes principales |
 |-------|---------------------|
-| `produit` | nom, categorie_id, variete, **quantite_stock**, **prix_actif**, seuil_alerte_stock |
+| `produit` | nom, categorie_id, taxe_id, variete, **quantite_stock**, **prix_actif**, seuil_alerte_stock |
 | `categorie` | nom, actif |
+| `taxe` | nom, taux, actif |
 | `stock` | produit_id, fournisseur_id, **quantite_achetee**, prix_achat_unitaire |
 | `sortie` | stock_id, quantite_sortie, **prix_reel** |
 | `fournisseur` | nom, contact, email, telephone, adresse |

@@ -17,6 +17,7 @@ const Layout = ({ children }) => {
         { path: '/fournisseurs', label: 'Fournisseurs', icon: Truck, roles: ['stock', 'manager'] },
         { path: '/alertes', label: 'Alertes', icon: Bell, roles: ['stock', 'manager'] },
         { path: '/utilisateurs', label: 'Utilisateurs', icon: Settings, roles: ['manager'] },
+        { path: '/configuration', label: 'Paramètres', icon: Settings, roles: ['manager'] },
     ];
 
     const navItems = allNavItems.filter(item => item.roles.includes(user?.role));
@@ -124,6 +125,11 @@ const Layout = ({ children }) => {
                 {user?.role === 'manager' && (
                     <Link to="/utilisateurs" className={`nav-tab ${location.pathname === '/utilisateurs' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
                         <Users className="w-5 h-5" /><span>Équipe</span>
+                    </Link>
+                )}
+                {user?.role === 'manager' && (
+                    <Link to="/configuration" className={`nav-tab ${location.pathname === '/configuration' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <Settings className="w-5 h-5" /><span>Config</span>
                     </Link>
                 )}
                 <button onClick={() => setMobileOpen(true)} className="nav-tab text-gray-400">
