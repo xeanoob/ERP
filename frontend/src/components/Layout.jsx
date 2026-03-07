@@ -29,7 +29,7 @@ const Layout = ({ children }) => {
     const NavContent = () => (
         <>
             <div className="px-5 py-6 border-b border-gray-800">
-                <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase">ERP Marché</h1>
+                <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase">Mon ERP</h1>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
                 {navItems.map(item => {

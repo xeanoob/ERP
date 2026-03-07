@@ -17,6 +17,10 @@ body {
   @apply bg-[#F9FAFB] text-[#111827] font-sans antialiased;
 }
 
+button {
+  cursor: pointer;
+}
+
 /* Minimal scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

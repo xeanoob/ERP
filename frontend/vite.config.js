@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Mini ERP Marche',
-        short_name: 'ERP Marche',
+        name: 'Mon ERP Marché',
+        short_name: 'Mon ERP',
         description: 'Gestion de stock et ventes pour le marché',
         theme_color: '#ffffff',
         background_color: '#ffffff',
