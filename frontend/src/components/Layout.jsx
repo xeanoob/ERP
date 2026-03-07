@@ -102,9 +102,9 @@ const Layout = ({ children }) => {
 
             {/* Main */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-sm font-semibold text-gray-800 capitalize">
+                <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shrink-0 sticky top-0 z-30">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <h2 className="text-sm font-semibold text-gray-800 capitalize truncate">
                             {navItems.find(n => n.path === location.pathname)?.label || 'ERP'}
                         </h2>
                     </div>
@@ -123,32 +123,37 @@ const Layout = ({ children }) => {
 
                             {showNotifs && (
                                 <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setShowNotifs(false)}></div>
-                                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-100 z-20 py-2 max-h-[400px] overflow-y-auto">
-                                        <div className="px-4 py-2 border-b border-gray-50 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">Alertes Stock ({alerts.length})</span>
-                                            <Link to="/alertes" onClick={() => setShowNotifs(false)} className="text-[10px] text-gray-500 hover:text-gray-900 font-medium">Gérer</Link>
+                                    <div className="fixed inset-0 z-40 lg:z-10 bg-black/5 lg:bg-transparent" onClick={() => setShowNotifs(false)}></div>
+                                    <div className="fixed lg:absolute top-14 lg:top-auto right-4 left-4 lg:left-auto lg:mt-2 lg:w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 lg:z-20 py-0 overflow-hidden flex flex-col max-h-[70vh] lg:max-h-[400px]">
+                                        <div className="px-5 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                                            <span className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">Alertes Stock ({alerts.length})</span>
+                                            <Link to="/alertes" onClick={() => setShowNotifs(false)} className="text-[11px] text-gray-500 hover:text-gray-900 font-bold underline decoration-gray-300">Gérer tout</Link>
                                         </div>
-                                        {alerts.length === 0 ? (
-                                            <div className="px-4 py-8 text-center text-gray-400 text-sm italic">
-                                                Aucune alerte en cours.
-                                            </div>
-                                        ) : (
-                                            <div className="divide-y divide-gray-50">
-                                                {alerts.map(a => (
-                                                    <Link key={a.id} to="/alertes" onClick={() => setShowNotifs(false)} className="block px-4 py-3 hover:bg-gray-50 transition-colors">
-                                                        <div className="flex justify-between items-start gap-2">
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-medium text-gray-900 truncate">{a.nom}</p>
-                                                                <p className="text-[10px] text-gray-500 truncate">{a.categorie_nom}</p>
+                                        <div className="overflow-y-auto last:border-b-0">
+                                            {alerts.length === 0 ? (
+                                                <div className="px-6 py-10 text-center text-gray-400 text-sm">
+                                                    <Bell className="w-8 h-8 mx-auto mb-2 opacity-10" />
+                                                    <p>Aucune alerte en cours.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="divide-y divide-gray-50">
+                                                    {alerts.map(a => (
+                                                        <Link key={a.id} to="/alertes" onClick={() => setShowNotifs(false)} className="block px-5 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                                                            <div className="flex justify-between items-start gap-3">
+                                                                <div className="min-w-0">
+                                                                    <p className="text-sm font-semibold text-gray-900 truncate">{a.nom}</p>
+                                                                    <p className="text-[10px] text-gray-500 truncate">{a.categorie_nom}</p>
+                                                                </div>
+                                                                <div className="text-right shrink-0">
+                                                                    <span className="text-xs font-black text-red-600 tabular-nums">{parseFloat(a.quantite_stock).toFixed(1)} kg</span>
+                                                                    <p className="text-[9px] text-amber-600 font-medium">Seuil: {parseFloat(a.seuil_alerte_stock).toFixed(0)}</p>
+                                                                </div>
                                                             </div>
-                                                            <span className="text-xs font-bold text-red-600 whitespace-nowrap">{parseFloat(a.quantite_stock).toFixed(1)} kg</span>
-                                                        </div>
-                                                        <p className="text-[10px] text-amber-600 mt-1 font-medium italic">Seuil: {parseFloat(a.seuil_alerte_stock).toFixed(0)} kg</p>
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        )}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </>
                             )}
@@ -167,35 +172,25 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Navbar Mobile (Bottom) */}
-            <nav className="bottom-nav pb-safe-nav">
+            <nav className="bottom-nav pb-safe-nav lg:hidden">
                 {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
-                    <Link to="/" className={`nav-tab ${location.pathname === '/' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <Link to="/" className={`nav-tab ${location.pathname === '/' ? 'text-gray-900' : 'text-gray-400'}`}>
                         <LayoutDashboard className="w-5 h-5" /><span>Bord</span>
                     </Link>
                 )}
+                <Link to="/alertes" className={`nav-tab relative ${location.pathname === '/alertes' ? 'text-gray-900' : 'text-gray-400'}`}>
+                    <Bell className="w-5 h-5" />
+                    {alerts.length > 0 && <span className="absolute top-2 right-1/2 translate-x-3 w-2 h-2 bg-red-600 rounded-full border border-white"></span>}
+                    <span>Alertes</span>
+                </Link>
                 {user?.role && ['vendeur', 'stock', 'manager'].includes(user.role) && (
-                    <Link to="/catalogue" className={`nav-tab ${location.pathname === '/catalogue' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <Link to="/catalogue" className={`nav-tab ${location.pathname === '/catalogue' ? 'text-gray-900' : 'text-gray-400'}`}>
                         <Package className="w-5 h-5" /><span>Stock</span>
                     </Link>
                 )}
                 {user?.role && ['vendeur', 'manager'].includes(user.role) && (
-                    <Link to="/sorties" className={`nav-tab ${location.pathname === '/sorties' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
+                    <Link to="/sorties" className={`nav-tab ${location.pathname === '/sorties' ? 'text-gray-900' : 'text-gray-400'}`}>
                         <ShoppingCart className="w-5 h-5" /><span>Ventes</span>
-                    </Link>
-                )}
-                {user?.role && ['stock', 'manager'].includes(user.role) && (
-                    <Link to="/fournisseurs" className={`nav-tab ${location.pathname === '/fournisseurs' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
-                        <Truck className="w-5 h-5" /><span>Lots</span>
-                    </Link>
-                )}
-                {user?.role === 'manager' && (
-                    <Link to="/utilisateurs" className={`nav-tab ${location.pathname === '/utilisateurs' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
-                        <Users className="w-5 h-5" /><span>Équipe</span>
-                    </Link>
-                )}
-                {user?.role === 'manager' && (
-                    <Link to="/configuration" className={`nav-tab ${location.pathname === '/configuration' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}>
-                        <Settings className="w-5 h-5" /><span>Config</span>
                     </Link>
                 )}
                 <button onClick={() => setMobileOpen(true)} className="nav-tab text-gray-400">
