@@ -7,9 +7,10 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     const client = await pool.connect();
     try {
-        const { produit_id, quantite_sortie, prix_reel } = req.body;
+        let { produit_id, quantite_sortie, prix_reel } = req.body;
+        produit_id = parseInt(produit_id);
 
-        if (quantite_sortie <= 0 || prix_reel < 0) {
+        if (isNaN(produit_id) || quantite_sortie <= 0 || prix_reel < 0) {
             return res.status(400).json('Invalid quantity or price');
         }
 
@@ -17,13 +18,13 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
 
         const stockRes = await client.query(`
             SELECT * FROM (
-                SELECT s.id, s.quantite_achetee, s.prix_achat_unitaire, s.date_entree,
+                SELECT s.id, s.quantite_achetee, s.prix_achat_unitaire, s.created_at,
                     s.quantite_achetee - COALESCE((SELECT SUM(so.quantite_sortie) FROM sortie so WHERE so.stock_id = s.id), 0) as restant
                 FROM stock s
                 WHERE s.produit_id = $1
             ) sub
             WHERE restant > 0
-            ORDER BY date_entree ASC
+            ORDER BY created_at ASC
         `, [produit_id]);
 
         let stocks = stockRes.rows;
