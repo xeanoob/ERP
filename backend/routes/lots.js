@@ -26,17 +26,19 @@ router.get('/', verifyToken, requireRole('manager', 'stock'), async (req, res) =
     try {
         const { product_id } = req.query;
         let query = `
-            SELECT s.*, p.nom as produit_nom, f.nom as fournisseur_nom 
+            SELECT s.*, p.nom as produit_nom, f.nom as fournisseur_nom,
+                   s.quantite_achetee - COALESCE(SUM(so.quantite_sortie), 0) as quantite_restante
             FROM stock s 
             JOIN produit p ON s.produit_id = p.id
             LEFT JOIN fournisseur f ON s.fournisseur_id = f.id
+            LEFT JOIN sortie so ON s.id = so.stock_id
         `;
         const params = [];
         if (product_id) {
             query += ' WHERE s.produit_id = $1';
             params.push(product_id);
         }
-        query += ' ORDER BY s.date_entree DESC';
+        query += ' GROUP BY s.id, p.nom, f.nom ORDER BY s.date_entree ASC';
         const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (err) {

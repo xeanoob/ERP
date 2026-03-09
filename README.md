@@ -4,6 +4,35 @@ Application de gestion commerciale pour marché de produits frais. Suivi des sto
 
 ---
 
+## Structure du Projet
+
+### Backend (`/backend`)
+- **`server.js`** : Point d'entrée de l'API. Configure Express et les routes.
+- **`db.js`** : Configuration du pool de connexion PostgreSQL.
+- **`init_db.js`** : Script pour initialiser la base de données (tables et données de test).
+- **`routes/`** : Logique métier par entité (ventes, produits, utilisateurs, etc.).
+  - **`sales.js`** : Gère les ventes avec déduction FIFO automatique.
+- **`middleware/auth.js`** : Vérification des tokens JWT et des rôles.
+
+### Frontend (`/frontend`)
+- **`src/main.jsx`** : Point d'entrée React.
+- **`src/App.jsx`** : Configuration du routage et du layout.
+- **`src/pages/`** : Composants de pages principaux.
+  - **`Inventaire.jsx`** : Vue d'ensemble des stocks et gestion des seuils d'alerte.
+  - **`Catalogue.jsx`** : Gestion brute des produits (CRUD).
+  - **`Sorties.jsx`** : Interface de saisie des ventes (déclenche la logique FIFO).
+- **`src/components/`** : Composants UI réutilisables (Layout, Navbar, etc.).
+
+## Logique FIFO (First In, First Out)
+
+L'inventaire est géré par lots dans la table `stock`. Lorsqu'une vente est effectuée :
+1. L'application cherche les lots disponibles pour le produit.
+2. Elle consomme en priorité les lots les plus anciens (triés par `created_at`).
+3. Elle crée des enregistrements dans la table `sortie` liés à chaque lot impacté.
+4. Le stock global du produit est mis à jour.
+
+---
+
 ## Stack Technique
 
 | Couche | Technologies |

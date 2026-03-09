@@ -21,6 +21,9 @@ const Inventaire = () => {
     const [showModal, setShowModal] = useState(false);
     const [newLot, setNewLot] = useState({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
 
+    const [expandedLots, setExpandedLots] = useState({});
+    const [lotsByProduct, setLotsByProduct] = useState({});
+
     useEffect(() => {
         fetchStocks();
         fetchProducts();
@@ -33,6 +36,19 @@ const Inventaire = () => {
             setStocks(res.data);
             setLoading(false);
         } catch (err) { console.error(err); setLoading(false); }
+    };
+
+    const fetchLots = async (productId) => {
+        if (lotsByProduct[productId]) return;
+        try {
+            const res = await axios.get(`${API_URL}/lots?product_id=${productId}`);
+            setLotsByProduct(prev => ({ ...prev, [productId]: res.data }));
+        } catch (err) { console.error(err); }
+    };
+
+    const toggleLotExpansion = (productId) => {
+        if (!expandedLots[productId]) fetchLots(productId);
+        setExpandedLots(prev => ({ ...prev, [productId]: !prev[productId] }));
     };
 
     const fetchProducts = async () => {
@@ -57,6 +73,15 @@ const Inventaire = () => {
             setNewLot({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
             fetchStocks();
             fetchProducts();
+            // Invalidate lots cache for this product
+            if (newLot.produit_id) {
+                setLotsByProduct(prev => {
+                    const next = { ...prev };
+                    delete next[newLot.produit_id];
+                    return next;
+                });
+                if (expandedLots[newLot.produit_id]) fetchLots(newLot.produit_id);
+            }
         } catch (err) { alert('Erreur: ' + (err.response?.data || err.message)); }
     };
 
@@ -175,7 +200,7 @@ const Inventaire = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900">État des Stocks</h2>
-                    <p className="text-sm text-gray-500">Cliquez sur un seuil pour le modifier.</p>
+                    <p className="text-sm text-gray-500">Cliquez sur un seuil pour le modifier ou sur la ligne pour voir les lots.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {message && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">{message}</span>}
@@ -217,47 +242,84 @@ const Inventaire = () => {
                                 const seuil = parseFloat(p.seuil_alerte_stock || 10);
                                 const isLow = qty <= seuil;
                                 const isCritical = qty <= seuil * 0.5;
+                                const isExpanded = expandedLots[p.id];
+                                const productLots = lotsByProduct[p.id] || [];
+
                                 return (
-                                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div className="text-sm font-medium text-gray-900">{p.nom}</div>
-                                            <div className="text-xs text-gray-500">{p.categorie_nom || '-'}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-right font-medium">
-                                            <span className={isCritical ? 'text-red-600 font-bold' : isLow ? 'text-amber-600 font-semibold' : 'text-gray-900'}>
-                                                {qty.toFixed(1)} kg
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-right">
-                                            {editingSeuil === p.id ? (
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <input type="number" step="1" value={seuilValue}
-                                                        onChange={e => setSeuilValue(e.target.value)}
-                                                        onKeyDown={e => handleSeuilKeyDown(e, p.id)} autoFocus
-                                                        className="w-16 bg-white border border-gray-900 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none" />
-                                                    <button onClick={() => saveSeuil(p.id)} className="p-1 text-green-600 hover:text-green-800">
-                                                        <Check className="w-3.5 h-3.5" />
-                                                    </button>
+                                    <React.Fragment key={p.id}>
+                                        <tr className="hover:bg-gray-50/50 transition-colors cursor-pointer group" onClick={() => toggleLotExpansion(p.id)}>
+                                            <td className="px-4 py-3 flex items-center gap-2">
+                                                <div className="flex-shrink-0">
+                                                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-gray-900" /> : <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-900" />}
                                                 </div>
-                                            ) : (
-                                                <button onClick={() => startEditSeuil(p)}
-                                                    className="text-gray-400 hover:text-gray-900 hover:underline transition-colors cursor-pointer"
-                                                    title="Cliquer pour modifier">{seuil.toFixed(0)}</button>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {isCritical ? (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200">CRITIQUE</span>
-                                            ) : isLow ? (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">BAS</span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">OK</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-right text-gray-600 font-medium">
-                                            {parseFloat(p.prix_actif).toFixed(2)}
-                                        </td>
-                                    </tr>
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900">{p.nom}</div>
+                                                    <div className="text-xs text-gray-500">{p.categorie_nom || '-'}</div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-right font-medium">
+                                                <span className={isCritical ? 'text-red-600 font-bold' : isLow ? 'text-amber-600 font-semibold' : 'text-gray-900'}>
+                                                    {qty.toFixed(1)} kg
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-right" onClick={(e) => e.stopPropagation()}>
+                                                {editingSeuil === p.id ? (
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <input type="number" step="1" value={seuilValue}
+                                                            onChange={e => setSeuilValue(e.target.value)}
+                                                            onKeyDown={e => handleSeuilKeyDown(e, p.id)} autoFocus
+                                                            className="w-16 bg-white border border-gray-900 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none" />
+                                                        <button onClick={() => saveSeuil(p.id)} className="p-1 text-green-600 hover:text-green-800">
+                                                            <Check className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button onClick={() => startEditSeuil(p)}
+                                                        className="text-gray-400 hover:text-gray-900 hover:underline transition-colors cursor-pointer"
+                                                        title="Cliquer pour modifier">{seuil.toFixed(0)}</button>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                {isCritical ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200">CRITIQUE</span>
+                                                ) : isLow ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">BAS</span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">OK</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-right text-gray-600 font-medium">
+                                                {parseFloat(p.prix_actif).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                        {isExpanded && (
+                                            <tr className="bg-gray-50/30">
+                                                <td colSpan="5" className="px-10 py-3">
+                                                    <div className="border-l-2 border-gray-200 pl-4 space-y-2">
+                                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Détail des Lots (FIFO)</h4>
+                                                        <div className="grid grid-cols-4 gap-4 text-xs font-medium text-gray-500 pb-1 border-b border-gray-100">
+                                                            <span>Date Entrée</span>
+                                                            <span>Fournisseur</span>
+                                                            <span className="text-right">Reste / Initial</span>
+                                                            <span className="text-right">P.U Achat</span>
+                                                        </div>
+                                                        {productLots.length === 0 ? (
+                                                            <div className="py-2 text-xs text-gray-400 italic">Aucun lot actif trouvé.</div>
+                                                        ) : productLots.map(l => (
+                                                            <div key={l.id} className={`grid grid-cols-4 gap-4 text-xs py-1.5 ${parseFloat(l.quantite_restante) <= 0 ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                                <span className="font-mono">{new Date(l.date_entree).toLocaleDateString('fr-FR')}</span>
+                                                                <span className="truncate">{l.fournisseur_nom || 'Direct'}</span>
+                                                                <span className="text-right font-semibold">
+                                                                    {parseFloat(l.quantite_restante).toFixed(1)} / {parseFloat(l.quantite_achetee).toFixed(1)} kg
+                                                                </span>
+                                                                <span className="text-right">{parseFloat(l.prix_achat_unitaire).toFixed(2)} €</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 );
                             })}
                         </tbody>
