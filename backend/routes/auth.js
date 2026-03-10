@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const { JWT_SECRET, verifyToken } = require('../middleware/auth');
 
-// Validation Schemas
+
 const registerSchema = z.object({
     nom: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     email: z.string().email("Format d'email invalide"),
@@ -19,7 +19,7 @@ const loginSchema = z.object({
     mot_de_passe: z.string().min(1, "Mot de passe requis")
 });
 
-// POST /api/auth/register
+
 router.post('/register', async (req, res) => {
     try {
         const validatedData = registerSchema.parse(req.body);
@@ -44,13 +44,13 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// POST /api/auth/login
+
 router.post('/login', async (req, res) => {
     try {
         const validatedData = loginSchema.parse(req.body);
         let { email, mot_de_passe } = validatedData;
 
-        // Robustness: trim and lowercase
+        
         email = email.trim().toLowerCase();
 
         console.log(`Login attempt for: [${email}]`);
@@ -84,7 +84,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// GET /api/auth/me
+
 router.get('/me', verifyToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT id, nom, email, role FROM utilisateur WHERE id = $1', [req.user.id]);

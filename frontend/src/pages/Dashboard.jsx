@@ -65,7 +65,7 @@ const Dashboard = () => {
                 fill: true,
                 tension: 0.4,
                 borderWidth: 2,
-                pointRadius: 0, // Hidden by default, show on hover
+                pointRadius: 0, 
                 pointHoverRadius: 5,
                 pointBackgroundColor: '#10b981',
                 pointBorderColor: '#fff',
@@ -138,7 +138,7 @@ const Dashboard = () => {
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
-            {/* KPI Cards */}
+            {}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="pro-card p-4 sm:p-5">
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>

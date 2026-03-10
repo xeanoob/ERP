@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const login = async (email, mot_de_passe) => {
-        // Trim email to avoid hidden character issues
+        
         const cleanEmail = email.trim();
         const res = await axios.post(`${API_URL}/auth/login`, { email: cleanEmail, mot_de_passe });
         const { token: newToken, user: userData } = res.data;

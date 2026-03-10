@@ -73,7 +73,7 @@ const Inventaire = () => {
             setNewLot({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
             fetchStocks();
             fetchProducts();
-            // Invalidate lots cache for this product
+            
             if (newLot.produit_id) {
                 setLotsByProduct(prev => {
                     const next = { ...prev };

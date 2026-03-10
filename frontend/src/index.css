@@ -21,7 +21,7 @@ button {
   cursor: pointer;
 }
 
-/* Minimal scrollbar */
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -45,7 +45,7 @@ button {
     @apply bg-white border border-gray-200 shadow-sm rounded-md;
   }
 
-  /* Safe area for bottom nav on mobile */
+  
   .pb-safe-nav {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }

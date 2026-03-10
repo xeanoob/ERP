@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET /api/taxes - Tous authentifiés
+
 router.get('/', verifyToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM taxe WHERE actif = TRUE ORDER BY nom ASC');
@@ -14,7 +14,7 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// POST /api/taxes - Manager uniquement
+
 router.post('/', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const { nom, taux } = req.body;
@@ -30,7 +30,7 @@ router.post('/', verifyToken, requireRole('manager'), async (req, res) => {
     }
 });
 
-// DELETE /api/taxes/:id - Manager uniquement
+
 router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const result = await pool.query('UPDATE taxe SET actif = FALSE WHERE id = $1 RETURNING *', [req.params.id]);

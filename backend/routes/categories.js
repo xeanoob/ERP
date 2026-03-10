@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET /api/categories - Tous authentifiés
+
 router.get('/', verifyToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM categorie WHERE actif = TRUE ORDER BY nom ASC');
@@ -11,7 +11,7 @@ router.get('/', verifyToken, async (req, res) => {
     } catch (err) { console.error(err.message); res.status(500).json({ error: 'Erreur serveur.' }); }
 });
 
-// POST /api/categories - Manager ou Stock
+
 router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { nom } = req.body;
@@ -28,7 +28,7 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
     }
 });
 
-// DELETE /api/categories/:id - Manager uniquement
+
 router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const result = await pool.query('UPDATE categorie SET actif = FALSE WHERE id = $1 RETURNING *', [req.params.id]);
