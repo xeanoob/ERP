@@ -86,7 +86,7 @@ const Catalogue = () => {
             p.seuil_alerte_stock
         ]);
 
-        // Professional CSV with BOM and Quoting
+        
         const csvContent = "\uFEFF" + [headers, ...rows].map(row =>
             row.map(cell => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(",")
         ).join("\n");
@@ -107,13 +107,13 @@ const Catalogue = () => {
         const doc = new jsPDF();
         const dateStr = new Date().toLocaleDateString('fr-FR');
 
-        // Header
+        
         doc.setFontSize(20);
-        doc.setTextColor(17, 24, 39); // Gray-900
+        doc.setTextColor(17, 24, 39); 
         doc.text("Catalogue Produits", 14, 22);
 
         doc.setFontSize(10);
-        doc.setTextColor(107, 114, 128); // Gray-500
+        doc.setTextColor(107, 114, 128); 
         doc.text(`Généré le: ${dateStr}`, 14, 30);
         doc.text(`Total produits: ${pagination.total}`, 14, 35);
 
@@ -134,12 +134,12 @@ const Catalogue = () => {
             body: tableRows,
             startY: 45,
             theme: 'grid',
-            headStyles: { fillColor: [17, 24, 39], fontSize: 9 }, // Gray-900 head
+            headStyles: { fillColor: [17, 24, 39], fontSize: 9 }, 
             bodyStyles: { fontSize: 8 },
-            alternateRowStyles: { fillColor: [249, 250, 251] }, // Gray-50 rows
+            alternateRowStyles: { fillColor: [249, 250, 251] }, 
             margin: { top: 45 },
             didDrawPage: function (data) {
-                // Footer
+                
                 const str = "Page " + doc.internal.getNumberOfPages();
                 doc.setFontSize(8);
                 const pageSize = doc.internal.pageSize;
@@ -192,7 +192,7 @@ const Catalogue = () => {
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
-            {/* Formulaire création */}
+            {}
             <div className="pro-card p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold text-gray-900">Nouveau Produit</h3>
@@ -255,7 +255,7 @@ const Catalogue = () => {
                 </form>
             </div>
 
-            {/* Barre de recherche */}
+            {}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="relative w-full sm:w-80">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -268,7 +268,7 @@ const Catalogue = () => {
                 </div>
             </div>
 
-            {/* Mobile: card layout */}
+            {}
             <div className="sm:hidden space-y-2">
                 {loading ? (
                     Array(5).fill(0).map((_, i) => (
@@ -296,7 +296,7 @@ const Catalogue = () => {
                 ))}
             </div>
 
-            {/* Desktop: table layout */}
+            {}
             <div className="hidden sm:block pro-card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[700px]">

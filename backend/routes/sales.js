@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// POST /api/sales — Vendeur ou Manager
+
 router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     const client = await pool.connect();
     try {
@@ -69,7 +69,7 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
     }
 });
 
-// GET /api/sales/history - Vendeur ou Manager
+
 router.get('/history', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     try {
         const query = `

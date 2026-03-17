@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET /api/fournisseurs - Manager ou Stock
+
 router.get('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { search } = req.query;
@@ -19,7 +19,7 @@ router.get('/', verifyToken, requireRole('manager', 'stock'), async (req, res) =
     } catch (err) { console.error(err.message); res.status(500).json({ error: 'Erreur serveur.' }); }
 });
 
-// POST /api/fournisseurs - Manager ou Stock
+
 router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { nom, contact, email, telephone, adresse } = req.body;
@@ -32,7 +32,7 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
     } catch (err) { console.error(err.message); res.status(500).json({ error: 'Erreur serveur.' }); }
 });
 
-// PUT /api/fournisseurs/:id - Manager ou Stock
+
 router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { nom, contact, email, telephone, adresse } = req.body;
@@ -45,7 +45,7 @@ router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res
     } catch (err) { console.error(err.message); res.status(500).json({ error: 'Erreur serveur.' }); }
 });
 
-// DELETE /api/fournisseurs/:id - Manager uniquement
+
 router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const result = await pool.query('UPDATE fournisseur SET actif = FALSE WHERE id = $1 RETURNING *', [req.params.id]);

@@ -4,7 +4,7 @@ const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET /api/users — Liste tous les utilisateurs (manager only)
+
 router.get('/', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const result = await pool.query(
@@ -17,7 +17,7 @@ router.get('/', verifyToken, requireRole('manager'), async (req, res) => {
     }
 });
 
-// POST /api/users — Créer un utilisateur (manager only)
+
 router.post('/', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const { nom, email, mot_de_passe, role } = req.body;
@@ -45,7 +45,7 @@ router.post('/', verifyToken, requireRole('manager'), async (req, res) => {
     }
 });
 
-// PUT /api/users/:id/role — Changer le rôle (manager only)
+
 router.put('/:id/role', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const { role } = req.body;
@@ -66,7 +66,7 @@ router.put('/:id/role', verifyToken, requireRole('manager'), async (req, res) =>
     }
 });
 
-// PUT /api/users/:id/toggle — Activer/désactiver (manager only)
+
 router.put('/:id/toggle', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const result = await pool.query(
@@ -81,7 +81,7 @@ router.put('/:id/toggle', verifyToken, requireRole('manager'), async (req, res) 
     }
 });
 
-// DELETE /api/users/:id — Supprimer définitivement (manager only)
+
 router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const { id } = req.params;

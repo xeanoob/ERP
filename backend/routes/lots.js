@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET /api/lots/stock — Tous authentifiés
+
 router.get('/stock', verifyToken, async (req, res) => {
     try {
         const query = `
@@ -21,7 +21,7 @@ router.get('/stock', verifyToken, async (req, res) => {
     }
 });
 
-// GET /api/lots - Manager ou Stock
+
 router.get('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { product_id } = req.query;
@@ -47,7 +47,7 @@ router.get('/', verifyToken, requireRole('manager', 'stock'), async (req, res) =
     }
 });
 
-// POST /api/lots - Manager ou Stock
+
 router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     const client = await pool.connect();
     try {

@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET /api/products - Accès pour tous les utilisateurs authentifiés
+
 router.get('/', verifyToken, async (req, res) => {
     try {
         const { includeArchived, search, page, limit } = req.query;
@@ -47,7 +47,7 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// POST /api/products - Manager ou Stock
+
 router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { nom, categorie_id, taxe_id, origine, unite, prix_actif, seuil_alerte_stock } = req.body;
@@ -62,7 +62,7 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
     }
 });
 
-// PUT /api/products/:id - Manager ou Stock
+
 router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -79,7 +79,7 @@ router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res
     }
 });
 
-// GET /api/products/alerts - Get products below threshold
+
 router.get('/alerts', verifyToken, async (req, res) => {
     try {
         const query = `
@@ -97,7 +97,7 @@ router.get('/alerts', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE /api/products/:id - Manager uniquement
+
 router.delete('/:id', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const { id } = req.params;

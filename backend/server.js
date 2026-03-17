@@ -10,30 +10,30 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.set('trust proxy', 1); // Trust first proxy (Render)
+app.set('trust proxy', 1); 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Global Rate Limiter
+
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 100, // Limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000, 
+    limit: 100, 
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: { error: 'Trop de requêtes, veuillez réessayer plus tard.' }
 });
 app.use(limiter);
 
-// Specific Rate Limiter for Login
+
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 10, // Max 10 attempts per 15 minutes
+    limit: 10, 
     message: { error: 'Trop de tentatives de connexion, veuillez patienter 15 minutes.' }
 });
 app.use('/api/auth/login', loginLimiter);
 
-// Import routes
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/lots', require('./routes/lots'));
@@ -46,7 +46,7 @@ app.use('/api/taxes', require('./routes/taxes'));
 app.use('/api/lieux_vente', require('./routes/lieux_vente'));
 app.use('/api/charges', require('./routes/charges'));
 
-// Health check route for Render
+
 app.get('/', (req, res) => {
     res.json({ status: 'API ERP Marché is running' });
 });
@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 
-    // Internal keep-alive ping (helps but doesn't fully replace external pings)
+    
     setInterval(() => {
         const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
         require('http').get(`${url}/`, res => {
@@ -62,5 +62,5 @@ app.listen(PORT, '0.0.0.0', () => {
         }).on('error', err => {
             console.error(`[Keep-Alive] Ping failed:`, err.message);
         });
-    }, 10 * 60 * 1000); // 10 minutes
+    }, 10 * 60 * 1000); 
 });

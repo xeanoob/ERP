@@ -5,7 +5,7 @@ require('dotenv').config();
 
 async function initDB() {
     if (!process.env.DATABASE_URL) {
-        // 1. Connect to 'postgres' to create the database if it doesn't exist (local only)
+        
         const client = new Client({
             user: process.env.DB_USER,
             host: process.env.DB_HOST,
@@ -43,7 +43,7 @@ async function initDB() {
             port: process.env.DB_PORT,
         };
 
-    // 2. Connect to the target database and run schema
+    
     const pool = new Client(poolConfig);
 
     try {

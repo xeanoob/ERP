@@ -170,7 +170,7 @@ const Configuration = () => {
                 </div>
             </div>
 
-            {/* Tabs */}
+            {}
             <div className="flex border-b border-gray-200">
                 <button
                     onClick={() => setActiveTab('categories')}
@@ -207,7 +207,7 @@ const Configuration = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Form Column */}
+                {}
                 <div className="md:col-span-1">
                     <div className="pro-card p-5 sticky top-6">
                         <h3 className="text-sm font-semibold text-gray-900 mb-4">
@@ -342,7 +342,7 @@ const Configuration = () => {
                     </div>
                 </div>
 
-                {/* List Column */}
+                {}
                 <div className="md:col-span-2">
                     <div className="pro-card min-h-[400px]">
                         <div className="p-4 border-b border-gray-100 flex items-center justify-between">

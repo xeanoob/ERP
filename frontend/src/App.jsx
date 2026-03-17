@@ -31,7 +31,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
 
-      {/* Protected Routes */}
+      {}
       <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/catalogue" element={<ProtectedRoute><Layout><Catalogue /></Layout></ProtectedRoute>} />
       <Route path="/inventaire" element={<ProtectedRoute roles={['stock', 'manager']}><Layout><Inventaire /></Layout></ProtectedRoute>} />

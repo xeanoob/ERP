@@ -36,7 +36,7 @@ const Historique = () => {
             (parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)
         ]);
 
-        // Professional CSV with BOM and Quoting
+        
         const csvContent = "\uFEFF" + [headers, ...rows].map(row =>
             row.map(cell => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(",")
         ).join("\n");
@@ -57,7 +57,7 @@ const Historique = () => {
         const doc = new jsPDF();
         const dateStr = new Date().toLocaleDateString('fr-FR');
 
-        // Header & Title
+        
         doc.setFontSize(22);
         doc.setTextColor(17, 24, 39);
         doc.text("Rapport des Ventes", 14, 22);
@@ -67,7 +67,7 @@ const Historique = () => {
         doc.text(`Période: ${dateFrom || 'Début'} au ${dateTo || 'Aujourd\'hui'}`, 14, 30);
         doc.text(`Généré le: ${dateStr}`, 14, 35);
 
-        // KPI Section (Aesthetic boxes)
+        
         doc.setDrawColor(229, 231, 235);
         doc.setFillColor(249, 250, 251);
         doc.roundedRect(14, 42, 182, 20, 2, 2, 'FD');
