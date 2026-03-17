@@ -26,9 +26,10 @@ const Historique = () => {
     };
 
     const exportCSV = () => {
-        const headers = ['Date', 'Produit', 'Qté (kg)', 'Prix Unitaire (€)', 'Total (€)'];
+        const headers = ['Date', 'Lieu', 'Produit', 'Qté', 'Prix Unitaire (€)', 'Total (€)'];
         const rows = filtered.map(s => [
-            new Date(s.date_sortie).toLocaleString('fr-FR'),
+            new Date(s.created_at).toLocaleString('fr-FR'),
+            s.lieu_vente_nom || '-',
             s.produit_nom,
             s.quantite_sortie,
             s.prix_reel,
@@ -84,9 +85,10 @@ const Historique = () => {
         doc.setTextColor((totalRevenue - totalCost) >= 0 ? [21, 128, 61] : [220, 38, 38]);
         doc.text(`${(totalRevenue - totalCost).toFixed(2)} €`, 140, 57);
 
-        const tableColumn = ["Date", "Produit", "Qté (kg)", "Prix Unitaire", "Total"];
+        const tableColumn = ["Date", "Lieu", "Produit", "Qté", "Prix Unitaire", "Total"];
         const tableRows = filtered.map(s => [
-            new Date(s.date_sortie).toLocaleDateString('fr-FR'),
+            new Date(s.created_at).toLocaleDateString('fr-FR'),
+            s.lieu_vente_nom || '-',
             s.produit_nom,
             parseFloat(s.quantite_sortie).toFixed(1),
             `${parseFloat(s.prix_reel).toFixed(2)} €`,
@@ -103,9 +105,9 @@ const Historique = () => {
             alternateRowStyles: { fillColor: [249, 250, 251] },
             margin: { top: 70 },
             columnStyles: {
-                2: { halign: 'right' },
                 3: { halign: 'right' },
-                4: { halign: 'right' }
+                4: { halign: 'right' },
+                5: { halign: 'right' }
             }
         });
 
@@ -116,7 +118,7 @@ const Historique = () => {
     const filtered = sales.filter(s => {
         const matchSearch = !search ||
             s.produit_nom?.toLowerCase().includes(search.toLowerCase());
-        const saleDate = new Date(s.date_sortie);
+        const saleDate = new Date(s.created_at);
         const matchFrom = !dateFrom || saleDate >= new Date(dateFrom);
         const matchTo = !dateTo || saleDate <= new Date(dateTo + 'T23:59:59');
         return matchSearch && matchFrom && matchTo;
@@ -185,10 +187,11 @@ const Historique = () => {
                                 <span className="text-sm font-semibold text-gray-900">{(parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)} €</span>
                             </div>
                             <div className="flex justify-between text-xs text-gray-500">
-                                <span>{parseFloat(s.quantite_sortie).toFixed(1)} kg × {parseFloat(s.prix_reel).toFixed(2)} €</span>
+                                <span>{parseFloat(s.quantite_sortie).toFixed(1)} * {parseFloat(s.prix_reel).toFixed(2)} €</span>
                             </div>
-                            <div className="text-[10px] text-gray-400">
-                                {new Date(s.date_sortie).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            <div className="text-[10px] text-gray-400 flex justify-between">
+                                <span>{new Date(s.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                <span>{s.lieu_vente_nom || 'Sans lieu'}</span>
                             </div>
                         </div>
                     ))}
@@ -200,9 +203,10 @@ const Historique = () => {
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Lieu de Vente</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Produit</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Qté (kg)</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix Réel</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Qté</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix de Vente</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total</th>
                             </tr>
                         </thead>
@@ -214,9 +218,10 @@ const Historique = () => {
                             ) : filtered.map(s => (
                                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                                        {new Date(s.date_sortie).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                        <span className="text-xs text-gray-400 ml-1">{new Date(s.date_sortie).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        {new Date(s.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        <span className="text-xs text-gray-400 ml-1">{new Date(s.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                                     </td>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-500">{s.lieu_vente_nom || '-'}</td>
                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{s.produit_nom}</td>
                                     <td className="px-4 py-3 text-sm text-right text-gray-900">{parseFloat(s.quantite_sortie).toFixed(1)}</td>
                                     <td className="px-4 py-3 text-sm text-right text-gray-600">{parseFloat(s.prix_reel).toFixed(2)} €</td>

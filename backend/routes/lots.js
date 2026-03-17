@@ -7,7 +7,7 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.get('/stock', verifyToken, async (req, res) => {
     try {
         const query = `
-            SELECT p.id, p.nom, c.nom as categorie_nom, p.variete, p.quantite_stock, p.prix_actif, p.seuil_alerte_stock
+            SELECT p.id, p.nom, c.nom as categorie_nom, p.origine, p.unite, p.quantite_stock, p.prix_actif, p.seuil_alerte_stock
             FROM produit p
             LEFT JOIN categorie c ON p.categorie_id = c.id
             WHERE p.actif = TRUE

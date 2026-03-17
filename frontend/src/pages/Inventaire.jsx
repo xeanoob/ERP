@@ -14,15 +14,17 @@ const Inventaire = () => {
     const [fournisseurs, setFournisseurs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
     const [editingSeuil, setEditingSeuil] = useState(null);
     const [seuilValue, setSeuilValue] = useState('');
+    const [editingPriceId, setEditingPriceId] = useState(null);
+    const [editingPriceValue, setEditingPriceValue] = useState('');
     const [message, setMessage] = useState('');
 
     const [showModal, setShowModal] = useState(false);
     const [newLot, setNewLot] = useState({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
 
-    const [expandedLots, setExpandedLots] = useState({});
-    const [lotsByProduct, setLotsByProduct] = useState({});
+
 
     useEffect(() => {
         fetchStocks();
@@ -38,18 +40,7 @@ const Inventaire = () => {
         } catch (err) { console.error(err); setLoading(false); }
     };
 
-    const fetchLots = async (productId) => {
-        if (lotsByProduct[productId]) return;
-        try {
-            const res = await axios.get(`${API_URL}/lots?product_id=${productId}`);
-            setLotsByProduct(prev => ({ ...prev, [productId]: res.data }));
-        } catch (err) { console.error(err); }
-    };
 
-    const toggleLotExpansion = (productId) => {
-        if (!expandedLots[productId]) fetchLots(productId);
-        setExpandedLots(prev => ({ ...prev, [productId]: !prev[productId] }));
-    };
 
     const fetchProducts = async () => {
         try {
@@ -75,12 +66,6 @@ const Inventaire = () => {
             fetchProducts();
             // Invalidate lots cache for this product
             if (newLot.produit_id) {
-                setLotsByProduct(prev => {
-                    const next = { ...prev };
-                    delete next[newLot.produit_id];
-                    return next;
-                });
-                if (expandedLots[newLot.produit_id]) fetchLots(newLot.produit_id);
             }
         } catch (err) { alert('Erreur: ' + (err.response?.data || err.message)); }
     };
@@ -95,8 +80,10 @@ const Inventaire = () => {
             const product = stocks.find(s => s.id === productId);
             await axios.put(`${API_URL}/products/${productId}`, {
                 nom: product.nom,
-                categorie: product.categorie,
-                variete: product.variete || '',
+                categorie_id: product.categorie_id,
+                taxe_id: product.taxe_id,
+                origine: product.origine || '',
+                unite: product.unite || 'kg',
                 prix_actif: product.prix_actif,
                 seuil_alerte_stock: parseFloat(seuilValue)
             });
@@ -112,8 +99,39 @@ const Inventaire = () => {
         if (e.key === 'Escape') setEditingSeuil(null);
     };
 
+    const startEditingPrice = (product) => {
+        setEditingPriceId(product.id);
+        setEditingPriceValue(parseFloat(product.prix_actif || 0).toFixed(2));
+    };
+
+    const saveEditPrice = async (productId) => {
+        if (!editingPriceId) return;
+        try {
+            const product = stocks.find(s => s.id === productId);
+            await axios.put(`${API_URL}/products/${productId}`, {
+                nom: product.nom,
+                categorie_id: product.categorie_id,
+                taxe_id: product.taxe_id,
+                origine: product.origine || '',
+                unite: product.unite || 'kg',
+                seuil_alerte_stock: product.seuil_alerte_stock,
+                prix_actif: parseFloat(editingPriceValue)
+            });
+            setEditingPriceId(null);
+            setMessage('Prix mis à jour');
+            setTimeout(() => setMessage(''), 2500);
+            fetchStocks();
+            fetchProducts();
+        } catch (err) { console.error(err); }
+    };
+
+    const handlePriceKeyDown = (e, productId) => {
+        if (e.key === 'Enter') saveEditPrice(productId);
+        if (e.key === 'Escape') setEditingPriceId(null);
+    };
+
     const exportCSV = () => {
-        const headers = ['Produit', 'Catégorie', 'Stock (kg)', 'Seuil Alerte', 'Statut', 'Prix Actif (€)'];
+        const headers = ['Produit', 'Catégorie', 'Stock', 'Unité', 'Seuil Alerte', 'Statut', 'Prix de Vente (€)'];
         const rows = filteredStocks.map(p => {
             const qty = parseFloat(p.quantite_stock);
             const seuil = parseFloat(p.seuil_alerte_stock || 10);
@@ -122,6 +140,7 @@ const Inventaire = () => {
                 p.nom,
                 p.categorie_nom || '',
                 qty.toFixed(1),
+                p.unite || 'kg',
                 seuil.toFixed(0),
                 status,
                 parseFloat(p.prix_actif).toFixed(2)
@@ -156,7 +175,7 @@ const Inventaire = () => {
         doc.setTextColor(107, 114, 128);
         doc.text(`Rapport généré le: ${dateStr}`, 14, 30);
 
-        const tableColumn = ["Produit", "Catégorie", "Stock", "Seuil", "Statut", "Prix"];
+        const tableColumn = ["Produit", "Catégorie", "Stock", "Unité", "Seuil", "Statut", "Prix"];
         const tableRows = filteredStocks.map(p => {
             const qty = parseFloat(p.quantite_stock);
             const seuil = parseFloat(p.seuil_alerte_stock || 10);
@@ -164,7 +183,8 @@ const Inventaire = () => {
             return [
                 p.nom,
                 p.categorie_nom || '-',
-                `${qty.toFixed(1)} kg`,
+                qty.toFixed(1),
+                p.unite || 'kg',
                 seuil.toFixed(0),
                 status,
                 `${parseFloat(p.prix_actif).toFixed(2)} €`
@@ -193,14 +213,20 @@ const Inventaire = () => {
         toast.success('Inventaire PDF généré');
     };
 
-    const filteredStocks = stocks.filter(s => s.nom.toLowerCase().includes(search.toLowerCase()));
+    const uniqueCategories = [...new Set(stocks.map(s => s.categorie_nom).filter(Boolean))].sort();
+
+    const filteredStocks = stocks.filter(s => {
+        const matchSearch = s.nom.toLowerCase().includes(search.toLowerCase());
+        const matchCategory = selectedCategory ? s.categorie_nom === selectedCategory : true;
+        return matchSearch && matchCategory;
+    });
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900">État des Stocks</h2>
-                    <p className="text-sm text-gray-500">Cliquez sur un seuil pour le modifier ou sur la ligne pour voir les lots.</p>
+                    <p className="text-sm text-gray-500">Cliquez sur un seuil pour le modifier.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {message && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">{message}</span>}
@@ -212,10 +238,22 @@ const Inventaire = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer un produit..."
-                        className="w-full bg-white border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900" />
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filtrer un produit..."
+                            className="w-full bg-white border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900" />
+                    </div>
+                    <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="w-full sm:w-48 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                    >
+                        <option value="">Toutes les catégories</option>
+                        {uniqueCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
                 </div>
                 <ExportMenu onExportCSV={exportCSV} onExportPDF={exportPDF} />
             </div>
@@ -229,7 +267,7 @@ const Inventaire = () => {
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Stock</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Seuil Alerte</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Statut</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix Actif (€)</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix de Vente (€)</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
@@ -242,16 +280,11 @@ const Inventaire = () => {
                                 const seuil = parseFloat(p.seuil_alerte_stock || 10);
                                 const isLow = qty <= seuil;
                                 const isCritical = qty <= seuil * 0.5;
-                                const isExpanded = expandedLots[p.id];
-                                const productLots = lotsByProduct[p.id] || [];
 
                                 return (
                                     <React.Fragment key={p.id}>
-                                        <tr className="hover:bg-gray-50/50 transition-colors cursor-pointer group" onClick={() => toggleLotExpansion(p.id)}>
+                                        <tr className="hover:bg-gray-50/50 transition-colors group">
                                             <td className="px-4 py-3 flex items-center gap-2">
-                                                <div className="flex-shrink-0">
-                                                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 group-hover:text-gray-900" /> : <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-900" />}
-                                                </div>
                                                 <div>
                                                     <div className="text-sm font-medium text-gray-900">{p.nom}</div>
                                                     <div className="text-xs text-gray-500">{p.categorie_nom || '-'}</div>
@@ -259,7 +292,7 @@ const Inventaire = () => {
                                             </td>
                                             <td className="px-4 py-3 text-sm text-right font-medium">
                                                 <span className={isCritical ? 'text-red-600 font-bold' : isLow ? 'text-amber-600 font-semibold' : 'text-gray-900'}>
-                                                    {qty.toFixed(1)} kg
+                                                    {qty.toFixed(1)} <span className="text-gray-500 font-normal text-xs">{p.unite || 'kg'}</span>
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-right" onClick={(e) => e.stopPropagation()}>
@@ -288,37 +321,24 @@ const Inventaire = () => {
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">OK</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-right text-gray-600 font-medium">
-                                                {parseFloat(p.prix_actif).toFixed(2)}
+                                            <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium" onDoubleClick={(e) => { e.stopPropagation(); startEditingPrice(p); }}>
+                                                {editingPriceId === p.id ? (
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <input type="number" step="0.01" value={editingPriceValue}
+                                                            onChange={e => setEditingPriceValue(e.target.value)}
+                                                            onKeyDown={e => handlePriceKeyDown(e, p.id)} autoFocus
+                                                            className="w-20 bg-white border border-gray-900 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                                        <button onClick={() => saveEditPrice(p.id)} className="p-1 text-green-600 hover:text-green-800">
+                                                            <Check className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button onClick={(e) => { e.stopPropagation(); startEditingPrice(p); }}
+                                                        className="text-gray-600 hover:text-gray-900 hover:underline transition-colors cursor-pointer"
+                                                        title="Cliquer pour modifier">{parseFloat(p.prix_actif).toFixed(2)}</button>
+                                                )}
                                             </td>
                                         </tr>
-                                        {isExpanded && (
-                                            <tr className="bg-gray-50/30">
-                                                <td colSpan="5" className="px-10 py-3">
-                                                    <div className="border-l-2 border-gray-200 pl-4 space-y-2">
-                                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Détail des Lots (FIFO)</h4>
-                                                        <div className="grid grid-cols-4 gap-4 text-xs font-medium text-gray-500 pb-1 border-b border-gray-100">
-                                                            <span>Date Entrée</span>
-                                                            <span>Fournisseur</span>
-                                                            <span className="text-right">Reste / Initial</span>
-                                                            <span className="text-right">P.U Achat</span>
-                                                        </div>
-                                                        {productLots.length === 0 ? (
-                                                            <div className="py-2 text-xs text-gray-400 italic">Aucun lot actif trouvé.</div>
-                                                        ) : productLots.map(l => (
-                                                            <div key={l.id} className={`grid grid-cols-4 gap-4 text-xs py-1.5 ${parseFloat(l.quantite_restante) <= 0 ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                                <span className="font-mono">{new Date(l.date_entree).toLocaleDateString('fr-FR')}</span>
-                                                                <span className="truncate">{l.fournisseur_nom || 'Direct'}</span>
-                                                                <span className="text-right font-semibold">
-                                                                    {parseFloat(l.quantite_restante).toFixed(1)} / {parseFloat(l.quantite_achetee).toFixed(1)} kg
-                                                                </span>
-                                                                <span className="text-right">{parseFloat(l.prix_achat_unitaire).toFixed(2)} €</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
                                     </React.Fragment>
                                 );
                             })}
@@ -352,7 +372,7 @@ const Inventaire = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Qté achetée (kg)</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Qté achetée</label>
                                     <input type="number" step="0.01" className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
                                         value={newLot.quantite_achetee} onChange={e => setNewLot({ ...newLot, quantite_achetee: e.target.value })} placeholder="0.00" required />
                                 </div>

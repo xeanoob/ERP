@@ -41,25 +41,36 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY d.date ASC
         `);
 
+        const chargesRes = await pool.query(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN periode = 'jour' THEN montant ELSE 0 END), 0) as charges_jour,
+                COALESCE(SUM(CASE WHEN periode = 'mensuel' THEN montant ELSE 0 END), 0) as charges_mois
+            FROM charge_fixe WHERE actif = TRUE
+        `);
+
         const stats = financeRes.rows[0];
         const counts = countsRes.rows[0];
+        const charges = chargesRes.rows[0];
+
+        const fixed_cost_today = parseFloat(charges.charges_jour) + (parseFloat(charges.charges_mois) / 30);
+        const fixed_cost_month = (parseFloat(charges.charges_jour) * 30) + parseFloat(charges.charges_mois);
 
         res.json({
             today: {
                 revenue: parseFloat(stats.revenue_today || 0),
-                cost: parseFloat(stats.cost_today || 0),
-                margin: parseFloat(stats.revenue_today || 0) - parseFloat(stats.cost_today || 0)
+                cost: parseFloat(stats.cost_today || 0) + fixed_cost_today,
+                margin: parseFloat(stats.revenue_today || 0) - (parseFloat(stats.cost_today || 0) + fixed_cost_today)
             },
             month: {
                 revenue: parseFloat(stats.revenue_month || 0),
-                cost: parseFloat(stats.cost_month || 0),
-                margin: parseFloat(stats.revenue_month || 0) - parseFloat(stats.cost_month || 0)
+                cost: parseFloat(stats.cost_month || 0) + fixed_cost_month,
+                margin: parseFloat(stats.revenue_month || 0) - (parseFloat(stats.cost_month || 0) + fixed_cost_month)
             },
             trend: trendRes.rows.map(r => ({
                 jour: r.jour,
                 revenue: parseFloat(r.revenue),
-                cost: parseFloat(r.cost),
-                margin: parseFloat(r.revenue) - parseFloat(r.cost)
+                cost: parseFloat(r.cost) + fixed_cost_today,
+                margin: parseFloat(r.revenue) - (parseFloat(r.cost) + fixed_cost_today)
             })),
             counts: {
                 produits: parseInt(counts.total_produits),

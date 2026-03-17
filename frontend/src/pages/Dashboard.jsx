@@ -182,7 +182,7 @@ const Dashboard = () => {
                         <AlertTriangle className="w-4 h-4 text-red-600" />
                         <span className="text-xs font-semibold text-red-700 uppercase tracking-wider">Alertes Stock Bas ({stats.alertes_stock.length})</span>
                     </div>
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 max-h-52 overflow-y-auto">
                         {stats.alertes_stock.map(a => (
                             <div key={a.id} className="px-4 py-3 flex items-center justify-between">
                                 <div>

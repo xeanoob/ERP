@@ -4,7 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'erp_secret_key_change_me';
 
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
         return res.status(401).json({ error: 'Accès refusé. Token manquant.' });
@@ -19,7 +19,6 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-// Role-based access
 const requireRole = (...roles) => {
     return (req, res, next) => {
         if (!req.user || !roles.includes(req.user.role)) {

@@ -43,6 +43,8 @@ app.use('/api/fournisseurs', require('./routes/fournisseurs'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/taxes', require('./routes/taxes'));
+app.use('/api/lieux_vente', require('./routes/lieux_vente'));
+app.use('/api/charges', require('./routes/charges'));
 
 // Health check route for Render
 app.get('/', (req, res) => {

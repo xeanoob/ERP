@@ -7,8 +7,9 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const Sorties = () => {
     const [products, setProducts] = useState([]);
+    const [lieux, setLieux] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ produit_id: '', quantite_sortie: '', prix_reel: '' });
+    const [form, setForm] = useState({ produit_id: '', quantite_sortie: '', prix_reel: '', lieu_vente_id: '' });
     const [message, setMessage] = useState('');
 
     useEffect(() => {
@@ -17,8 +18,12 @@ const Sorties = () => {
 
     const fetchData = async () => {
         try {
-            const resProd = await axios.get(`${API_URL}/products`);
-            setProducts(resProd.data.data);
+            const [resProd, resLieux] = await Promise.all([
+                axios.get(`${API_URL}/products`),
+                axios.get(`${API_URL}/lieux_vente`)
+            ]);
+            setProducts(resProd.data.data || resProd.data);
+            setLieux(resLieux.data);
             setLoading(false);
         } catch (err) { console.error(err); setLoading(false); }
     };
@@ -27,7 +32,7 @@ const Sorties = () => {
         e.preventDefault();
         try {
             await axios.post(`${API_URL}/sales`, form);
-            setForm({ produit_id: '', quantite_sortie: '', prix_reel: '' });
+            setForm({ produit_id: '', quantite_sortie: '', prix_reel: '', lieu_vente_id: '' });
             toast.success('Vente enregistrée avec succès !');
             fetchData();
         } catch (err) {
@@ -65,14 +70,28 @@ const Sorties = () => {
                             <option value="">Sélectionner un produit...</option>
                             {products.map(p => (
                                 <option key={p.id} value={p.id} disabled={parseFloat(p.quantite_stock) <= 0}>
-                                    {p.nom} {p.variete ? `(${p.variete})` : ''} — Stock: {parseFloat(p.quantite_stock).toFixed(1)} kg
+                                    {p.nom} {p.origine ? `(${p.origine})` : ''} — Stock: {parseFloat(p.quantite_stock).toFixed(1)} {p.unite || 'kg'}
                                 </option>
                             ))}
                         </select>
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Quantité (kg)</label>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lieu de Vente (Optionnel)</label>
+                        <select
+                            value={form.lieu_vente_id}
+                            onChange={e => setForm({ ...form, lieu_vente_id: e.target.value })}
+                            className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-medium focus:border-gray-900 focus:outline-none transition-colors"
+                        >
+                            <option value="">Sélectionner un lieu...</option>
+                            {lieux.map(l => (
+                                <option key={l.id} value={l.id}>{l.nom}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Quantité</label>
                         <input
                             type="number"
                             step="0.1"
@@ -85,7 +104,7 @@ const Sorties = () => {
                     </div>
 
                     <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prix de Vente (€/kg)</label>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prix de Vente Unitaire (€)</label>
                         <input
                             type="number"
                             step="0.01"

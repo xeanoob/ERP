@@ -16,9 +16,11 @@ const Catalogue = () => {
     const [taxes, setTaxes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
-    const [search, setSearch] = useState('');
-    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', taxe_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
+    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', taxe_id: '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
     const [message, setMessage] = useState('');
+    const [editingPriceId, setEditingPriceId] = useState(null);
+    const [editingPriceValue, setEditingPriceValue] = useState('');
+    const [search, setSearch] = useState('');
 
     const fetchProducts = useCallback(async (page = 1, searchTerm = '') => {
         try {
@@ -38,6 +40,12 @@ const Catalogue = () => {
             ]);
             setCategories(catRes.data);
             setTaxes(taxRes.data);
+            
+            // Set default tax if available
+            const defaultTax = taxRes.data.find(t => t.is_default);
+            if (defaultTax) {
+                setNewProduct(prev => ({ ...prev, taxe_id: defaultTax.id }));
+            }
         } catch (err) { console.error(err); }
     };
 
@@ -54,7 +62,8 @@ const Catalogue = () => {
         if (!newProduct.nom || !newProduct.categorie_id) return;
         try {
             await axios.post(`${API_URL}/products`, newProduct);
-            setNewProduct({ nom: '', categorie_id: '', taxe_id: '', variete: '', prix_actif: '', seuil_alerte_stock: '10' });
+            const defaultTax = taxes.find(t => t.is_default);
+            setNewProduct({ nom: '', categorie_id: '', taxe_id: defaultTax ? defaultTax.id : '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
             fetchProducts(pagination.page, search);
             toast.success('Produit ajouté avec succès');
         } catch (err) {
@@ -64,13 +73,14 @@ const Catalogue = () => {
     };
 
     const exportCSV = () => {
-        const headers = ['ID', 'Nom', 'Catégorie', 'Taxe', 'Variété', 'Stock', 'Prix Actif (€)', 'Seuil Alerte'];
+        const headers = ['ID', 'Nom', 'Catégorie', 'Taxe', 'Origine', 'Unité', 'Stock', 'Prix de Vente (€)', 'Seuil Alerte'];
         const rows = products.map(p => [
             p.id,
             p.nom,
             p.categorie_nom || '',
             p.taxe_nom ? `${p.taxe_nom} (${p.taxe_taux}%)` : '',
-            p.variete || '',
+            p.origine || '',
+            p.unite || 'kg',
             p.quantite_stock,
             p.prix_actif,
             p.seuil_alerte_stock
@@ -107,13 +117,14 @@ const Catalogue = () => {
         doc.text(`Généré le: ${dateStr}`, 14, 30);
         doc.text(`Total produits: ${pagination.total}`, 14, 35);
 
-        const tableColumn = ["ID", "Nom", "Catégorie", "Taxe", "Variété", "Stock", "Prix (€)"];
+        const tableColumn = ["ID", "Nom", "Catégorie", "Taxe", "Origine", "Unité", "Stock", "Prix (€)"];
         const tableRows = products.map(p => [
             p.id,
             p.nom,
             p.categorie_nom || '-',
             p.taxe_nom ? `${p.taxe_taux}%` : '-',
-            p.variete || '-',
+            p.origine || '-',
+            p.unite || 'kg',
             p.quantite_stock,
             parseFloat(p.prix_actif || 0).toFixed(2)
         ]);
@@ -153,6 +164,32 @@ const Catalogue = () => {
         }
     };
 
+    const startEditingPrice = (p) => {
+        setEditingPriceId(p.id);
+        setEditingPriceValue(parseFloat(p.prix_actif || 0).toFixed(2));
+    };
+
+    const saveEditPrice = async (p) => {
+        if (!editingPriceId) return;
+        try {
+            await axios.put(`${API_URL}/products/${p.id}`, {
+                ...p,
+                prix_actif: parseFloat(editingPriceValue)
+            });
+            toast.success('Prix mis à jour');
+            setEditingPriceId(null);
+            fetchProducts(pagination.page, search);
+        } catch (err) {
+            console.error(err);
+            toast.error('Erreur lors de la mise à jour');
+        }
+    };
+
+    const handlePriceKeyDown = (e, p) => {
+        if (e.key === 'Enter') saveEditPrice(p);
+        if (e.key === 'Escape') setEditingPriceId(null);
+    };
+
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
             {/* Formulaire création */}
@@ -185,13 +222,21 @@ const Catalogue = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Variété</label>
-                            <input type="text" value={newProduct.variete} onChange={e => setNewProduct({ ...newProduct, variete: e.target.value })}
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Golden" />
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Origine</label>
+                            <input type="text" value={newProduct.origine} onChange={e => setNewProduct({ ...newProduct, origine: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="France" />
                         </div>
                         <div className="flex gap-2">
+                            <div className="w-24">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Unité</label>
+                                <select value={newProduct.unite} onChange={e => setNewProduct({ ...newProduct, unite: e.target.value })}
+                                    className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
+                                    <option value="kg">kg</option>
+                                    <option value="unité">unité</option>
+                                </select>
+                            </div>
                             <div className="flex-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Prix Actif</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Prix de Vente</label>
                                 <input type="number" step="0.01" value={newProduct.prix_actif} onChange={e => setNewProduct({ ...newProduct, prix_actif: e.target.value })}
                                     className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="€" />
                             </div>
@@ -240,9 +285,9 @@ const Catalogue = () => {
                             <div className="text-sm font-medium text-gray-900 truncate">{p.nom}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                                 <span className="text-xs text-gray-500">{p.categorie_nom || '-'}</span>
-                                {p.variete && <span className="text-xs text-gray-400">· {p.variete}</span>}
+                                {p.origine && <span className="text-xs text-gray-400">· {p.origine}</span>}
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">{parseFloat(p.prix_actif || 0).toFixed(2)} € · Seuil: {p.seuil_alerte_stock ?? 10}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{parseFloat(p.prix_actif || 0).toFixed(2)} € / {p.unite || 'kg'} · Seuil: {p.seuil_alerte_stock ?? 10}</div>
                         </div>
                         <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-600 p-1 shrink-0">
                             <Trash2 className="w-4 h-4" />
@@ -261,8 +306,9 @@ const Catalogue = () => {
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Taxe</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Variété</th>
-                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix Actif</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origine</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Unité</th>
+                                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Prix de Vente</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Seuil</th>
                                 <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right w-20">Actions</th>
                             </tr>
@@ -296,8 +342,19 @@ const Catalogue = () => {
                                             <span className="text-xs text-blue-600 font-medium">{p.taxe_nom} ({p.taxe_taux}%)</span>
                                         ) : <span className="text-gray-400">-</span>}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{p.variete || <span className="text-gray-400">-</span>}</td>
-                                    <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">{parseFloat(p.prix_actif || 0).toFixed(2)} €</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{p.origine || <span className="text-gray-400">-</span>}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{p.unite || 'kg'}</td>
+                                    <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium" onDoubleClick={() => startEditingPrice(p)}>
+                                        {editingPriceId === p.id ? (
+                                            <input autoFocus type="number" step="0.01" value={editingPriceValue} 
+                                                onChange={e => setEditingPriceValue(e.target.value)} 
+                                                onKeyDown={e => handlePriceKeyDown(e, p)} 
+                                                onBlur={() => saveEditPrice(p)} 
+                                                className="w-20 bg-white border border-gray-900 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : (
+                                            <span className="cursor-pointer hover:underline" title="Double clic pour modifier">{parseFloat(p.prix_actif || 0).toFixed(2)} €</span>
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-right text-gray-500">{p.seuil_alerte_stock ?? 10}</td>
                                     <td className="px-4 py-3 text-sm text-right">
                                         <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-600 transition-colors p-1 opacity-0 group-hover:opacity-100">

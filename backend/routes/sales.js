@@ -7,8 +7,9 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     const client = await pool.connect();
     try {
-        let { produit_id, quantite_sortie, prix_reel } = req.body;
+        let { produit_id, quantite_sortie, prix_reel, lieu_vente_id } = req.body;
         produit_id = parseInt(produit_id);
+        lieu_vente_id = lieu_vente_id ? parseInt(lieu_vente_id) : null;
 
         if (isNaN(produit_id) || quantite_sortie <= 0 || prix_reel < 0) {
             return res.status(400).json('Invalid quantity or price');
@@ -43,8 +44,8 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
             let qtyToTake = Math.min(parseFloat(s.restant), qtyNeeded);
 
             const sortieRes = await client.query(
-                'INSERT INTO sortie (stock_id, quantite_sortie, prix_reel, created_by) VALUES($1, $2, $3, $4) RETURNING *',
-                [s.id, qtyToTake, prix_reel, req.user.id]
+                'INSERT INTO sortie (stock_id, lieu_vente_id, quantite_sortie, prix_reel, created_by) VALUES($1, $2, $3, $4, $5) RETURNING *',
+                [s.id, lieu_vente_id, qtyToTake, prix_reel, req.user.id]
             );
 
             sortiesCreated.push(sortieRes.rows[0]);
@@ -72,11 +73,12 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
 router.get('/history', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     try {
         const query = `
-            SELECT so.*, s.produit_id, p.nom as produit_nom, s.prix_achat_unitaire
+            SELECT so.*, s.produit_id, p.nom as produit_nom, s.prix_achat_unitaire, lv.nom as lieu_vente_nom
             FROM sortie so
             JOIN stock s ON so.stock_id = s.id
             JOIN produit p ON s.produit_id = p.id
-            ORDER BY so.date_sortie DESC
+            LEFT JOIN lieu_vente lv ON so.lieu_vente_id = lv.id
+            ORDER BY so.created_at DESC
             LIMIT 100
         `;
         const result = await pool.query(query);

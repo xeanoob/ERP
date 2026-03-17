@@ -33,7 +33,8 @@ const Alertes = () => {
             await axios.put(`${API_URL}/products/${product.id}`, {
                 nom: product.nom,
                 categorie: product.categorie,
-                variete: product.variete || '',
+                origine: product.origine || '',
+                unite: product.unite || 'kg',
                 prix_actif: product.prix_actif,
                 seuil_alerte_stock: parseFloat(editValue)
             });
@@ -96,11 +97,11 @@ const Alertes = () => {
                                     <tr key={p.id} className={`transition-colors ${isLow ? 'bg-red-50/40' : 'hover:bg-gray-50/50'}`}>
                                         <td className="px-4 py-3">
                                             <div className="text-sm font-medium text-gray-900">{p.nom}</div>
-                                            <div className="text-xs text-gray-500">{p.categorie_nom || '-'}{p.variete ? ` — ${p.variete}` : ''}</div>
+                                            <div className="text-xs text-gray-500">{p.categorie_nom || '-'}{p.origine ? ` — ${p.origine}` : ''}</div>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-right font-medium">
                                             <span className={isCritical ? 'text-red-600 font-bold' : isLow ? 'text-amber-600' : 'text-gray-900'}>
-                                                {qty.toFixed(1)} kg
+                                                {qty.toFixed(1)} {p.unite || 'kg'}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-right">
@@ -114,7 +115,7 @@ const Alertes = () => {
                                                     className="w-20 bg-white border-2 border-gray-900 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none ml-auto block"
                                                 />
                                             ) : (
-                                                <span className="text-gray-700 font-medium">{seuil.toFixed(0)} kg</span>
+                                                <span className="text-gray-700 font-medium">{seuil.toFixed(0)} {p.unite || 'kg'}</span>
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-center">

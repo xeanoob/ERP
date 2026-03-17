@@ -11,6 +11,8 @@ const Fournisseurs = () => {
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ nom: '', contact: '', email: '', telephone: '', adresse: '' });
     const [message, setMessage] = useState('');
+    const [editingCell, setEditingCell] = useState(null); // { id, field }
+    const [editingValue, setEditingValue] = useState('');
 
     useEffect(() => { fetchData(); }, []);
 
@@ -47,6 +49,33 @@ const Fournisseurs = () => {
             await axios.delete(`${API_URL}/fournisseurs/${id}`);
             fetchData();
         } catch (err) { console.error(err); }
+    };
+
+    const startEditing = (id, field, value) => {
+        setEditingCell({ id, field });
+        setEditingValue(value || '');
+    };
+
+    const saveEdit = async (id) => {
+        if (!editingCell) return;
+        try {
+            const fournisseur = items.find(i => i.id === id);
+            if (!fournisseur) return;
+            const updated = { ...fournisseur, [editingCell.field]: editingValue };
+            await axios.put(`${API_URL}/fournisseurs/${id}`, updated);
+            setItems(items.map(i => i.id === id ? updated : i));
+            setEditingCell(null);
+            setMessage('Mise à jour réussie');
+            setTimeout(() => setMessage(''), 2500);
+        } catch (err) {
+            console.error(err);
+            alert('Erreur lors de la mise à jour');
+        }
+    };
+
+    const handleKeyDown = (e, id) => {
+        if (e.key === 'Enter') saveEdit(id);
+        if (e.key === 'Escape') setEditingCell(null);
     };
 
     return (
@@ -113,10 +142,26 @@ const Fournisseurs = () => {
                                 <tr><td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">Aucun fournisseur.</td></tr>
                             ) : items.map(f => (
                                 <tr key={f.id} className="hover:bg-gray-50/50 transition-colors group">
-                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{f.nom}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{f.contact || '-'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{f.email || '-'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{f.telephone || '-'}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900" onDoubleClick={() => startEditing(f.id, 'nom', f.nom)}>
+                                        {editingCell?.id === f.id && editingCell?.field === 'nom' ? (
+                                            <input autoFocus value={editingValue} onChange={e => setEditingValue(e.target.value)} onKeyDown={e => handleKeyDown(e, f.id)} onBlur={() => saveEdit(f.id)} className="w-full bg-white border border-gray-900 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : f.nom}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer" onDoubleClick={() => startEditing(f.id, 'contact', f.contact)}>
+                                        {editingCell?.id === f.id && editingCell?.field === 'contact' ? (
+                                            <input autoFocus value={editingValue} onChange={e => setEditingValue(e.target.value)} onKeyDown={e => handleKeyDown(e, f.id)} onBlur={() => saveEdit(f.id)} className="w-full bg-white border border-gray-900 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : f.contact || '-'}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer" onDoubleClick={() => startEditing(f.id, 'email', f.email)}>
+                                        {editingCell?.id === f.id && editingCell?.field === 'email' ? (
+                                            <input autoFocus value={editingValue} onChange={e => setEditingValue(e.target.value)} onKeyDown={e => handleKeyDown(e, f.id)} onBlur={() => saveEdit(f.id)} className="w-full bg-white border border-gray-900 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : f.email || '-'}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 cursor-pointer" onDoubleClick={() => startEditing(f.id, 'telephone', f.telephone)}>
+                                        {editingCell?.id === f.id && editingCell?.field === 'telephone' ? (
+                                            <input autoFocus value={editingValue} onChange={e => setEditingValue(e.target.value)} onKeyDown={e => handleKeyDown(e, f.id)} onBlur={() => saveEdit(f.id)} className="w-full bg-white border border-gray-900 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : f.telephone || '-'}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-right">
                                         <button onClick={() => handleDelete(f.id)} className="text-gray-400 hover:text-red-600 transition-colors p-1 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                                     </td>
