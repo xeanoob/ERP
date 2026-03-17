@@ -74,6 +74,6 @@ button {
   }
 
   .desktop-table-container {
-    @apply hidden sm:block pro-card overflow-hidden;
+    @apply hidden sm:block bg-white border border-gray-200 shadow-sm rounded-md overflow-hidden;
   }
 }
