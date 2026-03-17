@@ -165,38 +165,42 @@ const Dashboard = () => {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <div className="pro-card p-4 sm:p-5">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>
-                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.period.revenue.toFixed(2)} €</p>
+                <div className="pro-card p-3 sm:p-5">
+                    <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>
+                    <p className="text-base sm:text-2xl font-bold text-gray-900 truncate">{stats.period.revenue.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-4 sm:p-5">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Coût de Revient</p>
-                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.period.cost.toFixed(2)} €</p>
+                <div className="pro-card p-3 sm:p-5">
+                    <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">Coût de Revient</p>
+                    <p className="text-base sm:text-2xl font-bold text-gray-900 truncate">{stats.period.cost.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-4 sm:p-5 border-red-50 bg-red-50/10">
-                    <p className="text-[10px] sm:text-xs font-semibold text-red-800 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Coût des Pertes</p>
-                    <p className="text-lg sm:text-2xl font-semibold text-red-600 truncate">{stats.period.perte_cost?.toFixed(2) || '0.00'} €</p>
+                <div className="pro-card p-3 sm:p-5 border-red-50 bg-red-50/10">
+                    <p className="text-[10px] sm:text-xs font-bold text-red-400 uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">Pertes</p>
+                    <p className="text-base sm:text-2xl font-bold text-red-600 truncate">{stats.period.perte_cost?.toFixed(2) || '0.00'} €</p>
                 </div>
-                <div className="pro-card p-4 sm:p-5 border-emerald-50 bg-emerald-50/10">
-                    <p className="text-[10px] sm:text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Marge Nette</p>
-                    <p className="text-xl sm:text-2xl font-bold text-emerald-600 truncate">{stats.period.margin.toFixed(2)} €</p>
+                <div className="pro-card p-3 sm:p-5 border-emerald-50 bg-emerald-50/10">
+                    <p className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">Marge Nette</p>
+                    <p className="text-base sm:text-2xl font-bold text-emerald-600 truncate">{stats.period.margin.toFixed(2)} €</p>
                 </div>
             </div>
 
             {/* Counters Row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div className="pro-card p-4 flex items-center gap-3">
-                    <Package className="w-5 h-5 text-gray-400" />
+                    <div className="p-2 bg-gray-50 rounded-lg">
+                        <Package className="w-5 h-5 text-gray-400" />
+                    </div>
                     <div>
-                        <p className="text-lg font-semibold text-gray-900">{stats.counts?.produits ?? '-'}</p>
-                        <p className="text-xs text-gray-500">Produits</p>
+                        <p className="text-lg font-bold text-gray-900 leading-tight">{stats.counts?.produits ?? '-'}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Produits</p>
                     </div>
                 </div>
                 <div className="pro-card p-4 flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-gray-400" />
+                    <div className="p-2 bg-gray-50 rounded-lg">
+                        <Truck className="w-5 h-5 text-gray-400" />
+                    </div>
                     <div>
-                        <p className="text-lg font-semibold text-gray-900">{stats.counts?.fournisseurs ?? '-'}</p>
-                        <p className="text-xs text-gray-500">Fournisseurs</p>
+                        <p className="text-lg font-bold text-gray-900 leading-tight">{stats.counts?.fournisseurs ?? '-'}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Fournisseurs</p>
                     </div>
                 </div>
             </div>
@@ -204,20 +208,22 @@ const Dashboard = () => {
             {/* Stock Alerts */}
             {stats.alertes_stock && stats.alertes_stock.length > 0 && (
                 <div className="pro-card overflow-hidden">
-                    <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-red-600" />
-                        <span className="text-xs font-semibold text-red-700 uppercase tracking-wider">Alertes Stock Bas ({stats.alertes_stock.length})</span>
+                    <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-600" />
+                            <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest">Alertes Stock Bas ({stats.alertes_stock.length})</span>
+                        </div>
                     </div>
-                    <div className="divide-y divide-gray-100 max-h-52 overflow-y-auto">
+                    <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto hide-scrollbar">
                         {stats.alertes_stock.map(a => (
-                            <div key={a.id} className="px-4 py-3 flex items-center justify-between">
-                                <div>
-                                    <span className="text-sm font-medium text-gray-900">{a.nom}</span>
-                                    <span className="text-xs text-gray-500 ml-2">{a.categorie}</span>
+                            <div key={a.id} className="px-4 py-3 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors">
+                                <div className="min-w-0 flex-1 mr-4">
+                                    <p className="text-sm font-bold text-gray-900 truncate">{a.nom}</p>
+                                    <p className="text-[10px] text-gray-400 uppercase font-medium">{a.categorie || '-'}</p>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-sm font-semibold text-red-600">{a.stock_actuel.toFixed(1)} kg</span>
-                                    <span className="text-xs text-gray-400 ml-2">/ seuil {a.seuil.toFixed(0)}</span>
+                                <div className="text-right shrink-0">
+                                    <p className="text-sm font-black text-red-600 leading-tight">{a.stock_actuel.toFixed(1)} <span className="text-[10px] font-normal text-gray-400">kg</span></p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Seuil: {a.seuil.toFixed(0)}</p>
                                 </div>
                             </div>
                         ))}

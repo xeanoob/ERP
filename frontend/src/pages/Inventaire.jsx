@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Check, Download } from 'lucide-react';
+import { Plus, Search, Check, Download, ClipboardList, X, AlertTriangle, Pencil } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExportMenu from '../components/ExportMenu';
@@ -23,22 +23,35 @@ const Inventaire = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [newLot, setNewLot] = useState({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
+    
+    // Inventory Verification State
+    const [showInventoryModal, setShowInventoryModal] = useState(false);
+    const [inventoryCounts, setInventoryCounts] = useState({}); // { productId: physicalCount }
+    const [isSubmittingInventory, setIsSubmittingInventory] = useState(false);
 
 
 
     useEffect(() => {
-        fetchStocks();
         fetchProducts();
         fetchFournisseurs();
     }, []);
 
-    const fetchStocks = async () => {
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchStocks(search);
+        }, 500);
+        return () => clearTimeout(timeout);
+    }, [search]);
+
+    const fetchStocks = async (q = '') => {
         try {
-            const res = await axios.get(`${API_URL}/lots/stock`);
+            const res = await axios.get(`${API_URL}/lots/stock`, { params: { search: q } });
             setStocks(res.data);
             setLoading(false);
         } catch (err) { console.error(err); setLoading(false); }
     };
+
+    const handleSearch = (e) => setSearch(e.target.value);
 
 
 
@@ -68,6 +81,47 @@ const Inventaire = () => {
             if (newLot.produit_id) {
             }
         } catch (err) { alert('Erreur: ' + (err.response?.data || err.message)); }
+    };
+
+    const handleInventorySubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmittingInventory(true);
+        const losses = [];
+        
+        try {
+            for (const s of stocks) {
+                const physical = parseFloat(inventoryCounts[s.id] || 0);
+                const system = parseFloat(s.quantite_stock);
+                const diff = system - physical;
+
+                if (diff > 0.05) { // Small threshold to avoid floating point issues
+                    losses.push({
+                        produit_id: s.id,
+                        quantite_sortie: diff,
+                        type: 'perte',
+                        prix_reel: 0,
+                        lieu_vente_id: null,
+                        date_vente: new Date().toISOString()
+                    });
+                }
+            }
+
+            if (losses.length > 0) {
+                // Submit each loss
+                await Promise.all(losses.map(l => axios.post(`${API_URL}/sales`, l)));
+                toast.success(`${losses.length} perte(s) enregistrée(s)`);
+            } else {
+                toast.success('Inventaire validé (aucune perte détectée)');
+            }
+            
+            setShowInventoryModal(false);
+            fetchStocks();
+        } catch (err) {
+            console.error(err);
+            toast.error('Erreur lors de l\'enregistrement de l\'inventaire');
+        } finally {
+            setIsSubmittingInventory(false);
+        }
     };
 
     const startEditSeuil = (product) => {
@@ -228,11 +282,20 @@ const Inventaire = () => {
                     <h2 className="text-lg font-semibold text-gray-900">État des Stocks</h2>
                     <p className="text-sm text-gray-500">Cliquez sur un seuil pour le modifier.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     {message && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">{message}</span>}
+                    <button onClick={() => {
+                        const counts = {};
+                        stocks.forEach(s => counts[s.id] = parseFloat(s.quantite_stock).toFixed(1));
+                        setInventoryCounts(counts);
+                        setShowInventoryModal(true);
+                    }}
+                        className="bg-white text-gray-900 border border-gray-200 px-3 sm:px-4 py-2 rounded-md hover:bg-gray-50 transition-colors text-xs sm:text-sm font-bold flex items-center shadow-sm">
+                        <ClipboardList className="w-4 h-4 mr-1.5 sm:mr-2" /> Faire l'inventaire
+                    </button>
                     <button onClick={() => setShowModal(true)}
-                        className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium flex items-center shadow-sm">
-                        <Plus className="w-4 h-4 mr-2" /> Entrée de lot
+                        className="bg-gray-900 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-gray-800 transition-colors text-xs sm:text-sm font-bold flex items-center shadow-sm">
+                        <Plus className="w-4 h-4 mr-1.5 sm:mr-2" /> Entrée de lot
                     </button>
                 </div>
             </div>
@@ -258,7 +321,96 @@ const Inventaire = () => {
                 <ExportMenu onExportCSV={exportCSV} onExportPDF={exportPDF} />
             </div>
 
-            <div className="pro-card overflow-hidden">
+            {/* Mobile Card View */}
+            <div className="block sm:hidden space-y-3">
+                {loading ? (
+                    Array(5).fill(0).map((_, i) => (
+                        <div key={i} className="pro-card p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="space-y-2 w-full">
+                                    <div className="h-4 bg-gray-100 rounded w-2/3 animate-pulse"></div>
+                                    <div className="h-3 bg-gray-100 rounded w-1/3 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : filteredStocks.length === 0 ? (
+                    <div className="pro-card p-8 text-center text-sm text-gray-500">Aucun produit trouvé.</div>
+                ) : filteredStocks.map(p => {
+                    const qty = parseFloat(p.quantite_stock);
+                    const seuil = parseFloat(p.seuil_alerte_stock || 10);
+                    const isLow = qty <= seuil;
+                    const isCritical = qty <= seuil * 0.5;
+
+                    return (
+                        <div key={p.id} className={`pro-card p-4 flex flex-col gap-3 transition-all ${isCritical ? 'border-red-200 bg-red-50/5' : isLow ? 'border-amber-200 bg-amber-50/5' : ''}`}>
+                            <div className="flex justify-between items-start">
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight truncate">{p.nom}</h4>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+                                            {p.categorie_nom || '-'}
+                                        </span>
+                                        {p.origine && <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">· {p.origine}</span>}
+                                    </div>
+                                </div>
+                                <div className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${
+                                    isCritical ? 'bg-red-50 text-red-600 border-red-100' : 
+                                    isLow ? 'bg-amber-50 text-amber-600 border-amber-100' : 
+                                    'bg-green-50 text-green-600 border-green-100'
+                                }`}>
+                                    {isCritical ? 'Critique' : isLow ? 'Bas' : 'OK'}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-50">
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Stock Actuel</p>
+                                    <p className={`text-sm font-mono font-black ${isLow ? 'text-red-600' : 'text-gray-900'}`}>
+                                        {qty.toFixed(1)} <span className="text-[10px] font-bold opacity-30">{p.unite || 'kg'}</span>
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Seuil Alerte</p>
+                                    <div className="flex items-center gap-1.5">
+                                        {editingSeuil === p.id ? (
+                                            <input autoFocus type="number" value={seuilValue} onChange={e => setSeuilValue(e.target.value)}
+                                                onKeyDown={e => handleSeuilKeyDown(e, p.id)} onBlur={() => saveSeuil(p.id)}
+                                                className="w-16 bg-white border border-gray-900 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none" />
+                                        ) : (
+                                            <button onClick={() => { setEditingSeuil(p.id); setSeuilValue(p.seuil_alerte_stock || 10); }} className="flex items-center gap-1 text-xs font-mono text-gray-600 hover:text-gray-900 group">
+                                                {seuil.toFixed(0)}
+                                                <Pencil className="w-3 h-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Prix Vente</p>
+                                    <div className="flex items-center gap-1.5">
+                                        {editingPriceId === p.id ? (
+                                            <input autoFocus type="number" step="0.01" value={editingPriceValue} onChange={e => setEditingPriceValue(e.target.value)}
+                                                onKeyDown={e => handlePriceKeyDown(e, p.id)} onBlur={() => saveEditPrice(p.id)}
+                                                className="w-20 bg-white border border-gray-900 rounded px-1.5 py-0.5 text-xs font-mono focus:outline-none" />
+                                        ) : (
+                                            <button onClick={() => startEditingPrice(p)} className="flex items-center gap-1 text-xs font-mono text-gray-900 font-bold group">
+                                                {parseFloat(p.prix_actif).toFixed(2)} €
+                                                <Pencil className="w-3 h-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-end justify-end">
+                                    <p className="text-[10px] font-bold text-gray-300 italic opacity-50">#{p.id}</p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block pro-card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead className="bg-gray-50 border-b border-gray-200">
@@ -348,23 +500,23 @@ const Inventaire = () => {
             </div>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-md shadow-2xl max-w-sm w-full overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100">
-                            <h3 className="text-sm font-semibold text-gray-900">Nouvelle Entrée de Lot</h3>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Nouvelle Entrée de Lot</h3>
                         </div>
-                        <form onSubmit={handleAddLot} className="px-5 py-4 space-y-4">
+                        <form onSubmit={handleAddLot} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Produit *</label>
-                                <select className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Produit *</label>
+                                <select className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gray-900 outline-none"
                                     value={newLot.produit_id} onChange={e => setNewLot({ ...newLot, produit_id: e.target.value })} required>
                                     <option value="" disabled>Sélectionner...</option>
                                     {products.map(p => <option key={p.id} value={p.id}>{p.nom} ({p.categorie})</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Fournisseur</label>
-                                <select className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Fournisseur</label>
+                                <select className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gray-900 outline-none"
                                     value={newLot.fournisseur_id} onChange={e => setNewLot({ ...newLot, fournisseur_id: e.target.value })}>
                                     <option value="">(Aucun)</option>
                                     {fournisseurs.map(f => <option key={f.id} value={f.id}>{f.nom}</option>)}
@@ -372,21 +524,118 @@ const Inventaire = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Qté achetée</label>
-                                    <input type="number" step="0.01" className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Qté achetée</label>
+                                    <input type="number" step="0.01" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gray-900 outline-none"
                                         value={newLot.quantite_achetee} onChange={e => setNewLot({ ...newLot, quantite_achetee: e.target.value })} placeholder="0.00" required />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">P.U Achat (€)</label>
-                                    <input type="number" step="0.01" className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">P.U Achat (€)</label>
+                                    <input type="number" step="0.01" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gray-900 outline-none"
                                         value={newLot.prix_achat_unitaire} onChange={e => setNewLot({ ...newLot, prix_achat_unitaire: e.target.value })} placeholder="0.00" required />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Annuler</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800">Valider</button>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" className="flex-1 bg-gray-900 text-white py-2.5 rounded-lg text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Valider</button>
+                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-white border border-gray-200 text-gray-400 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-gray-50 active:scale-95 transition-all">Annuler</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {showInventoryModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-[60] animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-xl max-h-[90vh] sm:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                    <ClipboardList className="w-5 h-5 text-blue-600" />
+                                    Faire l'inventaire
+                                </h3>
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mt-0.5">Vérification du stock physique</p>
+                            </div>
+                            <button onClick={() => setShowInventoryModal(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Content - To Do List */}
+                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex gap-3">
+                                <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0" />
+                                <p className="text-xs text-blue-800 leading-relaxed">
+                                    Saisissez la quantité réelle constatée. Si elle est inférieure au stock théorique, une <strong>perte</strong> sera automatiquement enregistrée.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                {stocks.map(s => {
+                                    const system = parseFloat(s.quantite_stock);
+                                    const physical = parseFloat(inventoryCounts[s.id] || 0);
+                                    const diff = system - physical;
+                                    const isLoss = diff > 0.05;
+
+                                    return (
+                                        <div key={s.id} className={`flex flex-col p-4 rounded-xl border transition-all ${isLoss ? 'border-amber-200 bg-amber-50/50 shadow-sm' : 'border-gray-100 bg-white'}`}>
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-black text-gray-900 uppercase tracking-tight truncate">
+                                                        {s.nom}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        {s.origine && <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{s.origine}</span>}
+                                                        <span className="text-[10px] font-bold text-gray-300">· Théorique: {system.toFixed(1)} {s.unite || 'kg'}</span>
+                                                    </div>
+                                                </div>
+                                                {isLoss && (
+                                                    <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest animate-pulse">
+                                                        Perte: -{diff.toFixed(1)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden focus-within:border-gray-900 focus-within:ring-4 focus-within:ring-gray-900/5 transition-all">
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={inventoryCounts[s.id] || ''}
+                                                    onChange={e => setInventoryCounts({ ...inventoryCounts, [s.id]: e.target.value })}
+                                                    className="flex-1 px-3 py-2.5 text-sm font-black font-mono text-gray-900 bg-transparent focus:outline-none"
+                                                    placeholder="Saisir stock physique..."
+                                                />
+                                                <span className="px-4 text-[10px] font-black text-gray-400 bg-gray-100/50 border-l border-gray-200 uppercase tracking-widest flex items-center">
+                                                    {s.unite || 'kg'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowInventoryModal(false)}
+                                className="px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={handleInventorySubmit}
+                                disabled={isSubmittingInventory}
+                                className={`px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white rounded-md transition-all shadow-lg flex items-center gap-2 ${isSubmittingInventory ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black active:scale-95'}`}
+                            >
+                                {isSubmittingInventory ? 'Enregistrement...' : (
+                                    <>
+                                        <Check className="w-4 h-4" />
+                                        Valider l'Inventaire
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

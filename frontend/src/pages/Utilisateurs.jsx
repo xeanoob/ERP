@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, UserCheck, UserX, Shield, Trash2 } from 'lucide-react';
+import { Plus, UserCheck, UserX, Shield, Trash2, Pencil } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -27,6 +27,9 @@ const Utilisateurs = () => {
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ nom: '', email: '', mot_de_passe: '', role: 'vendeur' });
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [userToEdit, setUserToEdit] = useState(null);
+    const [editForm, setEditForm] = useState({ nom: '', email: '' });
 
     useEffect(() => { fetchUsers(); }, []);
 
@@ -61,6 +64,25 @@ const Utilisateurs = () => {
             await axios.put(`${API_URL}/users/${userId}/role`, { role: newRole });
             fetchUsers();
         } catch (err) { console.error(err); }
+    };
+
+    const handleOpenEdit = (u) => {
+        setUserToEdit(u);
+        setEditForm({ nom: u.nom, email: u.email });
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.put(`${API_URL}/users/${userToEdit.id}`, editForm);
+            setShowEditModal(false);
+            setMessage({ type: 'success', text: 'Utilisateur mis à jour.' });
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+            fetchUsers();
+        } catch (err) {
+            setMessage({ type: 'error', text: err.response?.data?.error || 'Erreur' });
+        }
     };
 
     const handleToggle = async (userId) => {
@@ -198,6 +220,11 @@ const Utilisateurs = () => {
                                 </div>
 
                                 <div className="flex gap-2">
+                                    <button onClick={() => handleOpenEdit(u)}
+                                        className="p-2 rounded-md border border-blue-100 text-blue-600 bg-blue-50 transition-all active:scale-95"
+                                        title="Modifier">
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
                                     {!isSelf && (
                                         <>
                                             <button onClick={() => handleToggle(u.id)}
@@ -293,6 +320,33 @@ const Utilisateurs = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Modal de modification mobile */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Modifier Profil</h3>
+                        </div>
+                        <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nom Complet</label>
+                                <input value={editForm.nom} onChange={e => setEditForm({ ...editForm, nom: e.target.value })} required
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gray-900 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</label>
+                                <input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} required
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gray-900 outline-none" />
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" className="flex-1 bg-gray-900 text-white py-2.5 rounded-lg text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Enregistrer</button>
+                                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 bg-white border border-gray-200 text-gray-400 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-gray-50 active:scale-95 transition-all">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

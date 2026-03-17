@@ -157,18 +157,20 @@ const Historique = () => {
             </div>
 
             {/* KPI résumé */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="pro-card p-3 sm:p-4">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Sorties</p>
-                    <p className="text-lg sm:text-xl font-semibold text-gray-900">{filtered.length}</p>
+                    <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Sorties</p>
+                    <p className="text-base sm:text-xl font-black text-gray-900 leading-tight">{filtered.length}</p>
                 </div>
                 <div className="pro-card p-3 sm:p-4">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">C.A.</p>
-                    <p className="text-lg sm:text-xl font-semibold text-gray-900">{totalRevenue.toFixed(2)} €</p>
+                    <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">C.A.</p>
+                    <p className="text-base sm:text-xl font-black text-gray-900 leading-tight">{totalRevenue.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-3 sm:p-4">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Marge</p>
-                    <p className={`text-lg sm:text-xl font-semibold ${(totalRevenue - totalCost) >= 0 ? 'text-green-700' : 'text-red-600'}`}>{(totalRevenue - totalCost).toFixed(2)} €</p>
+                <div className="pro-card p-3 sm:p-4 col-span-2 sm:col-span-1 border-emerald-50 bg-emerald-50/10">
+                    <p className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1">Marge Est.</p>
+                    <p className={`text-base sm:text-xl font-black ${(totalRevenue - totalCost) >= 0 ? 'text-emerald-600' : 'text-red-500'} leading-tight`}>
+                        {(totalRevenue - totalCost).toFixed(2)} €
+                    </p>
                 </div>
             </div>
 

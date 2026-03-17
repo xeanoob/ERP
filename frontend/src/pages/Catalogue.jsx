@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Plus, Trash2, Search, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Plus, Trash2, Search, ChevronLeft, ChevronRight, Download, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -21,6 +21,9 @@ const Catalogue = () => {
     const [editingCell, setEditingCell] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [search, setSearch] = useState('');
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [productToEdit, setProductToEdit] = useState(null);
+    const [editForm, setEditForm] = useState({ nom: '', categorie_id: '', taxe_id: '', origine: '', unite: '', prix_actif: '', seuil_alerte_stock: '' });
 
     const fetchProducts = useCallback(async (page = 1, searchTerm = '') => {
         try {
@@ -49,13 +52,16 @@ const Catalogue = () => {
         } catch (err) { console.error(err); }
     };
 
-    useEffect(() => { fetchProducts(); fetchCategoriesAndTaxes(); }, [fetchProducts]);
+    useEffect(() => { fetchCategoriesAndTaxes(); }, []);
 
-    const handleSearch = (e) => {
-        const val = e.target.value;
-        setSearch(val);
-        fetchProducts(1, val);
-    };
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            fetchProducts(1, search);
+        }, 500);
+        return () => clearTimeout(timeout);
+    }, [search, fetchProducts]);
+
+    const handleSearch = (e) => setSearch(e.target.value);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -69,6 +75,32 @@ const Catalogue = () => {
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.error || 'Erreur lors de l\'ajout');
+        }
+    };
+
+    const handleOpenEditModal = (p) => {
+        setProductToEdit(p);
+        setEditForm({
+            nom: p.nom || '',
+            categorie_id: p.categorie_id || '',
+            taxe_id: p.taxe_id || '',
+            origine: p.origine || '',
+            unite: p.unite || 'kg',
+            prix_actif: p.prix_actif || '',
+            seuil_alerte_stock: p.seuil_alerte_stock ?? 10
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveQuickEdit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.put(`${API_URL}/products/${productToEdit.id}`, editForm);
+            toast.success('Produit mis à jour');
+            setShowEditModal(false);
+            fetchProducts(pagination.page, search);
+        } catch (err) {
+            toast.error('Erreur lors de la mise à jour');
         }
     };
 
@@ -200,63 +232,61 @@ const Catalogue = () => {
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
             {}
-            <div className="pro-card p-4 sm:p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900">Nouveau Produit</h3>
-                    {message && <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">{message}</span>}
+            <div className="pro-card p-4 sm:p-5 order-first sm:order-none">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-50">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Nouveau Produit</h3>
+                    {message && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded uppercase tracking-widest">{message}</span>}
                 </div>
-                <form onSubmit={handleCreate} className="space-y-3">
+                <form onSubmit={handleCreate} className="space-y-4">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="col-span-2 sm:col-span-1">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Nom *</label>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Nom *</label>
                             <input type="text" value={newProduct.nom} onChange={e => setNewProduct({ ...newProduct, nom: e.target.value })}
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="Ex: Pomme Golden" />
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" placeholder="Ex: Pomme Golden" />
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie *</label>
+                        <div className="col-span-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Catégorie *</label>
                             <select value={newProduct.categorie_id} onChange={e => setNewProduct({ ...newProduct, categorie_id: e.target.value })}
-                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
+                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900">
                                 <option value="" disabled>Choisir</option>
                                 {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Taxe</label>
+                        <div className="col-span-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Taxe</label>
                             <select value={newProduct.taxe_id} onChange={e => setNewProduct({ ...newProduct, taxe_id: e.target.value })}
-                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
+                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900">
                                 <option value="">(Aucune)</option>
                                 {taxes.map(t => <option key={t.id} value={t.id}>{t.nom} ({t.taux}%)</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Origine</label>
+                        <div className="col-span-1 sm:col-span-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Origine</label>
                             <input type="text" value={newProduct.origine} onChange={e => setNewProduct({ ...newProduct, origine: e.target.value })}
-                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="France" />
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" placeholder="France" />
                         </div>
-                        <div className="flex gap-2">
-                            <div className="w-24">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Unité</label>
-                                <select value={newProduct.unite} onChange={e => setNewProduct({ ...newProduct, unite: e.target.value })}
-                                    className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm">
-                                    <option value="kg">kg</option>
-                                    <option value="unité">unité</option>
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Prix de Vente</label>
-                                <input type="number" step="0.01" value={newProduct.prix_actif} onChange={e => setNewProduct({ ...newProduct, prix_actif: e.target.value })}
-                                    className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm" placeholder="€" />
-                            </div>
-                            <div className="w-16">
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Seuil</label>
-                                <input type="number" step="1" value={newProduct.seuil_alerte_stock} onChange={e => setNewProduct({ ...newProduct, seuil_alerte_stock: e.target.value })}
-                                    className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm" placeholder="10" />
-                            </div>
+                        <div className="col-span-1 sm:col-span-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Unité</label>
+                            <select value={newProduct.unite} onChange={e => setNewProduct({ ...newProduct, unite: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                <option value="kg">kg</option>
+                                <option value="unité">unité</option>
+                            </select>
+                        </div>
+                        <div className="col-span-1 sm:col-span-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Prix Vente (€)</label>
+                            <input type="number" step="0.01" value={newProduct.prix_actif} onChange={e => setNewProduct({ ...newProduct, prix_actif: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" placeholder="0.00" />
+                        </div>
+                        <div className="col-span-1 sm:col-span-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Seuil Alerte</label>
+                            <input type="number" step="1" value={newProduct.seuil_alerte_stock} onChange={e => setNewProduct({ ...newProduct, seuil_alerte_stock: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" placeholder="10" />
                         </div>
                     </div>
                     <div className="flex justify-end pt-1">
-                        <button type="submit" className="w-full sm:w-auto bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 flex items-center justify-center transition-colors">
-                            <Plus className="w-4 h-4 mr-2" /> Ajouter
+                        <button type="submit" className="w-full sm:w-auto bg-gray-900 text-white px-8 py-2 rounded-md text-sm font-bold hover:bg-gray-800 transition-all shadow-lg active:scale-95 flex items-center justify-center">
+                            <Plus className="w-4 h-4 mr-2" /> Ajouter au Catalogue
                         </button>
                     </div>
                 </form>
@@ -287,18 +317,28 @@ const Catalogue = () => {
                 ) : products.length === 0 ? (
                     <div className="pro-card px-4 py-8 text-center text-sm text-gray-500">Aucun produit.</div>
                 ) : products.map(p => (
-                    <div key={p.id} className="pro-card px-4 py-3 flex items-center justify-between">
-                        <div className="min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate">{p.nom}</div>
+                    <div key={p.id} className="pro-card px-4 py-3 flex items-center justify-between group">
+                        <div className="min-w-0 flex-1">
+                            <div className="text-sm font-bold text-gray-900 truncate uppercase tracking-tight">{p.nom}</div>
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-gray-500">{p.categorie_nom || '-'}</span>
-                                {p.origine && <span className="text-xs text-gray-400">· {p.origine}</span>}
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">{p.categorie_nom || '-'}</span>
+                                {p.origine && <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">· {p.origine}</span>}
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">{parseFloat(p.prix_actif || 0).toFixed(2)} € / {p.unite || 'kg'} · Seuil: {p.seuil_alerte_stock ?? 10}</div>
+                            <div className="text-[11px] font-medium text-gray-500 mt-1">
+                                <span className="text-gray-900 font-bold">{parseFloat(p.prix_actif || 0).toFixed(2)} €</span> / {p.unite || 'kg'} 
+                                <span className="mx-1 text-gray-200">|</span> 
+                                Seuil: <span className={p.quantite_stock <= p.seuil_alerte_stock ? 'text-red-500 font-bold' : ''}>{p.seuil_alerte_stock ?? 10}</span>
+                            </div>
                         </div>
-                        <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-600 p-1 shrink-0">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button onClick={() => handleOpenEditModal(p)} className="p-2 text-gray-400 hover:text-blue-600 active:scale-95 transition-all">
+                                <Pencil className="w-4 h-4" />
+                                <span className="sr-only">Modifier</span>
+                            </button>
+                            <button onClick={() => handleDelete(p.id)} className="p-2 text-gray-300 hover:text-red-500 active:scale-95 transition-all">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -430,6 +470,57 @@ const Catalogue = () => {
                     </div>
                 )}
             </div>
+
+            {/* Quick Edit Modal for Mobile */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Modifier Produit</h3>
+                        </div>
+                        <form onSubmit={handleSaveQuickEdit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nom *</label>
+                                <input type="text" value={editForm.nom} onChange={e => setEditForm({ ...editForm, nom: e.target.value })}
+                                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-900/5 focus:border-gray-900 outline-none" required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Catégorie</label>
+                                    <select value={editForm.categorie_id} onChange={e => setEditForm({ ...editForm, categorie_id: e.target.value })}
+                                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-900">
+                                        {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Prix (€)</label>
+                                    <input type="number" step="0.01" value={editForm.prix_actif} onChange={e => setEditForm({ ...editForm, prix_actif: e.target.value })}
+                                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-900" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Unité</label>
+                                    <select value={editForm.unite} onChange={e => setEditForm({ ...editForm, unite: e.target.value })}
+                                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-900">
+                                        <option value="kg">kg</option>
+                                        <option value="unité">unité</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Seuil Alerte</label>
+                                    <input type="number" value={editForm.seuil_alerte_stock} onChange={e => setEditForm({ ...editForm, seuil_alerte_stock: e.target.value })}
+                                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-900" />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="submit" className="flex-1 bg-gray-900 text-white py-2.5 rounded-lg text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Enregistrer</button>
+                                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 bg-white border border-gray-200 text-gray-400 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-gray-50 active:scale-95 transition-all">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
