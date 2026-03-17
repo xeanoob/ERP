@@ -31,8 +31,6 @@ const Inventaire = () => {
     const [inventoryCounts, setInventoryCounts] = useState({}); // { productId: physicalCount }
     const [isSubmittingInventory, setIsSubmittingInventory] = useState(false);
 
-
-
     useEffect(() => {
         fetchProducts();
         fetchFournisseurs();
@@ -54,8 +52,6 @@ const Inventaire = () => {
     };
 
     const handleSearch = (e) => setSearch(e.target.value);
-
-
 
     const fetchProducts = async () => {
         try {
@@ -79,9 +75,6 @@ const Inventaire = () => {
             setNewLot({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
             fetchStocks();
             fetchProducts();
-            
-            if (newLot.produit_id) {
-            }
         } catch (err) { alert('Erreur: ' + (err.response?.data || err.message)); }
     };
 

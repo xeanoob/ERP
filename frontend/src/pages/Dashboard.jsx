@@ -150,22 +150,6 @@ const Dashboard = () => {
         }
     };
 
-    const TrendIndicator = ({ current, previous, label, inverse = false }) => {
-        if (!previous || previous === 0) return null;
-        const diff = current - previous;
-        const percent = (diff / previous) * 100;
-        const isPositive = diff > 0;
-        const colorClass = inverse 
-            ? (isPositive ? 'text-red-500' : 'text-emerald-500')
-            : (isPositive ? 'text-emerald-500' : 'text-red-500');
-
-        return (
-            <div className={`flex items-center gap-1 text-[10px] font-bold mt-1 ${colorClass}`}>
-                {isPositive ? '▲' : '▼'} {Math.abs(percent).toFixed(1)}%
-                <span className="text-gray-400 font-normal ml-1">vs préc.</span>
-            </div>
-        );
-    };
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
@@ -180,7 +164,6 @@ const Dashboard = () => {
                 </select>
             </div>
 
-            {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div className="pro-card p-3 sm:p-5">
                     <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>
@@ -200,7 +183,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Counters Row */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div className="pro-card p-4 flex items-center gap-3">
                     <div className="p-2 bg-gray-50 rounded-lg">
@@ -222,7 +204,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Stock Alerts */}
             {stats.alertes_stock && stats.alertes_stock.length > 0 && (
                 <div className="pro-card overflow-hidden">
                     <div className="px-4 py-3 bg-red-50 border-b border-red-100 flex items-center justify-between">
@@ -248,7 +229,6 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* Chart Area */}
             <div className="pro-card p-6">
                 <div className="flex items-center justify-between mb-6">
                     <div>

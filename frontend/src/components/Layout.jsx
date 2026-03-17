@@ -82,12 +82,10 @@ const Layout = ({ children }) => {
 
     return (
         <div className="flex h-screen bg-[#F9FAFB] font-sans selection:bg-gray-200">
-            {}
             <aside className="hidden lg:flex flex-col w-56 bg-[#111111] shrink-0">
                 <NavContent />
             </aside>
 
-            {}
             <div className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
                 <aside className={`absolute left-0 top-0 bottom-0 w-72 bg-[#111111] flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-out transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -101,7 +99,6 @@ const Layout = ({ children }) => {
                 </aside>
             </div>
 
-            {}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shrink-0 sticky top-0 z-30">
                     <div className="flex items-center gap-3 min-w-0">
@@ -110,7 +107,6 @@ const Layout = ({ children }) => {
                         </h2>
                     </div>
                     <div className="flex items-center gap-4">
-                        {}
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifs(!showNotifs)}
@@ -172,7 +168,6 @@ const Layout = ({ children }) => {
                 </main>
             </div>
 
-            {}
             <nav className="bottom-nav pb-safe-nav lg:hidden grid grid-cols-6 items-center">
                 <Link to="/" className={`nav-tab px-1 ${location.pathname === '/' ? 'text-gray-900 border-t-2 border-gray-900' : 'text-gray-400'}`}>
                     <LayoutDashboard className="w-5 h-5" />

@@ -3,7 +3,6 @@ const router = express.Router();
 const pool = require('../db');
 const { verifyToken } = require('../middleware/auth');
 
-
 router.get('/stats', verifyToken, async (req, res) => {
     try {
         const range = req.query.range || '7days';
@@ -40,7 +39,6 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY p.quantite_stock ASC
         `);
 
-        // Determine previous period for comparison
         let prevStartDateStr, prevEndDateStr;
         if (range === '7days') {
             prevStartDateStr = "CURRENT_DATE - INTERVAL '13 days'";
@@ -72,7 +70,6 @@ router.get('/stats', verifyToken, async (req, res) => {
             WHERE so.created_at BETWEEN ${prevStartDateStr} AND ${prevEndDateStr}
         `);
 
-        // We use generate_series with '1 day' to have consistent data points for any range
         const trendRes = await pool.query(`
             SELECT 
                 d.date::date as jour,
@@ -121,8 +118,6 @@ router.get('/stats', verifyToken, async (req, res) => {
             };
         });
 
-        // Add fixed costs to previous period for fair comparison
-        // We'll approximate the number of days in the period
         const periodDaysRes = await pool.query(`SELECT COUNT(*) FROM generate_series(${startDateStr}, ${endDateStr}, '1 day'::interval)`);
         const numDays = parseInt(periodDaysRes.rows[0].count);
         const prev_total_cost = parseFloat(prevStats.cost) + (fixed_cost_day * numDays);
