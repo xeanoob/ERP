@@ -219,7 +219,7 @@ const Utilisateurs = () => {
                 })}
             </div>
 
-            <div className="desktop-table-container">
+            <div className="hidden sm:block pro-card overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-200">

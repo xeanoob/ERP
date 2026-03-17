@@ -69,6 +69,15 @@ const Sorties = () => {
                 </button>
             </div>
 
+            {form.type === 'vente' && (
+                <div className="pro-card p-4 border-l-4 border-gray-900 mb-2 sm:mb-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction</p>
+                    <p className="text-2xl font-mono font-bold text-gray-900">
+                        {((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)} €
+                    </p>
+                </div>
+            )}
+
             <div className={`pro-card p-6 ${form.type === 'perte' ? 'border-2 border-red-100 bg-red-50/10' : ''}`}>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="sm:col-span-2">
@@ -146,16 +155,6 @@ const Sorties = () => {
                 </form>
             </div>
 
-            {form.type === 'vente' && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="pro-card p-4 border-l-4 border-gray-900">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction</p>
-                        <p className="text-2xl font-mono font-bold text-gray-900">
-                            {((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)} €
-                        </p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

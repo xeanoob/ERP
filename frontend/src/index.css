@@ -59,4 +59,21 @@ button {
   .nav-tab {
     @apply flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors w-full h-full;
   }
+
+  /* Responsive Utilities */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-card-grid {
+    @apply grid grid-cols-1 gap-3 sm:hidden px-1;
+  }
+
+  .desktop-table-container {
+    @apply hidden sm:block pro-card overflow-hidden;
+  }
 }

@@ -243,7 +243,7 @@ const Configuration = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {}
-                <div className="lg:col-span-1 order-2 lg:order-1">
+                <div className="lg:col-span-1 order-1">
                     <div className="pro-card p-5 lg:sticky lg:top-32">
                         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">
                             Ajouter {activeTab === 'categories' ? 'une catégorie' : activeTab === 'lieux' ? 'un lieu' : activeTab === 'charges' ? 'une charge' : 'une taxe'}
@@ -397,7 +397,7 @@ const Configuration = () => {
                 </div>
 
                 {}
-                <div className="lg:col-span-2 order-1 lg:order-2">
+                <div className="lg:col-span-2 order-2 lg:order-2">
                     <div className="pro-card min-h-[400px]">
                         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                             <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
@@ -413,130 +413,142 @@ const Configuration = () => {
                                 <Loader2 className="w-6 h-6 text-gray-300 animate-spin" />
                             </div>
                         ) : (
-                            <div className="divide-y divide-gray-100">
-                                {activeTab === 'categories' ? (
-                                    categories.length === 0 ? (
-                                        <div className="p-12 text-center text-sm text-gray-400">Aucune catégorie.</div>
-                                    ) : (
-                                        categories.map(c => (
-                                            <div key={c.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{c.nom}</div>
-                                                    <div className="text-[10px] text-gray-400 font-mono">ID: {c.id}</div>
+                            <div>
+                                {/* Mobile Cards View */}
+                                <div className="mobile-card-grid p-3">
+                                    {activeTab === 'categories' ? (
+                                        categories.length === 0 ? <p className="text-center text-sm text-gray-400 py-4">Aucune catégorie.</p> :
+                                            categories.map(c => (
+                                                <div key={c.id} className="pro-card p-4 flex justify-between items-center">
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-gray-900">{c.nom}</h4>
+                                                        <p className="text-[10px] text-gray-400 font-mono">ID: {c.id}</p>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteCategory(c.id)} className="p-2 text-red-500 bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeleteCategory(c.id)}
-                                                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))
-                                    )
-                                ) : activeTab === 'lieux' ? (
-                                    lieux.length === 0 ? (
-                                        <div className="p-12 text-center text-sm text-gray-400">Aucun lieu de vente.</div>
-                                    ) : (
-                                        lieux.map(l => (
-                                            <div key={l.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{l.nom}</div>
-                                                    <div className="text-[10px] text-gray-400 font-mono">ID: {l.id}</div>
+                                            ))
+                                    ) : activeTab === 'lieux' ? (
+                                        lieux.length === 0 ? <p className="text-center text-sm text-gray-400 py-4">Aucun lieu.</p> :
+                                            lieux.map(l => (
+                                                <div key={l.id} className="pro-card p-4 flex justify-between items-center">
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-gray-900">{l.nom}</h4>
+                                                        <p className="text-[10px] text-gray-400 font-mono">ID: {l.id}</p>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteLieu(l.id)} className="p-2 text-red-500 bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeleteLieu(l.id)}
-                                                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))
-                                    )
-                                ) : activeTab === 'charges' ? (
-                                    charges.length === 0 ? (
-                                        <div className="p-12 text-center text-sm text-gray-400">Aucune charge fixe.</div>
-                                    ) : (
-                                        charges.map(c => (
-                                            <div key={c.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">{c.nom}</div>
-                                                    <div className="text-xs text-gray-500 font-medium">{parseFloat(c.montant).toFixed(2)} € / {c.periode === 'jour' ? 'Jour' : 'Mois'}</div>
+                                            ))
+                                    ) : activeTab === 'charges' ? (
+                                        charges.length === 0 ? <p className="text-center text-sm text-gray-400 py-4">Aucune charge.</p> :
+                                            charges.map(c => (
+                                                <div key={c.id} className="pro-card p-4 flex justify-between items-center">
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-gray-900">{c.nom}</h4>
+                                                        <p className="text-xs text-gray-500 font-medium">{parseFloat(c.montant).toFixed(2)} € / {c.periode === 'jour' ? 'Jour' : 'Mois'}</p>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteCharge(c.id)} className="p-2 text-red-500 bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeleteCharge(c.id)}
-                                                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))
-                                    )
-                                ) : activeTab === 'integrations' ? (
-                                    apiKeys.length === 0 ? (
-                                        <div className="p-12 text-center text-sm text-gray-400">Aucune intégration active.</div>
+                                            ))
+                                    ) : activeTab === 'integrations' ? (
+                                        apiKeys.length === 0 ? <p className="text-center text-sm text-gray-400 py-4">Aucune intégration.</p> :
+                                            apiKeys.map(k => (
+                                                <div key={k.id} className="pro-card p-4 space-y-3 border-l-4 border-blue-500">
+                                                    <div className="flex justify-between items-start">
+                                                        <h4 className="text-sm font-bold text-gray-900 capitalize">{k.service_name.replace('_', ' ')}</h4>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${k.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{k.actif ? 'ACTIF' : 'INACTIF'}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-blue-600 font-mono bg-blue-50 p-2 rounded break-all">.../api/integrations/eos?api_key={k.api_key}</div>
+                                                    <button onClick={() => handleCopyWebhookUrl(k)} className="w-full py-2 bg-blue-600 text-white text-xs font-bold rounded">COPIER WEBHOOK</button>
+                                                </div>
+                                            ))
                                     ) : (
-                                        apiKeys.map(k => (
-                                            <div key={k.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/30 border-b border-gray-100 group">
-                                                <div>
+                                        taxes.length === 0 ? <p className="text-center text-sm text-gray-400 py-4">Aucune taxe.</p> :
+                                            taxes.map(t => (
+                                                <div key={t.id} className="pro-card p-4 flex justify-between items-center">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="text-sm font-bold text-gray-900">{t.nom}</h4>
+                                                            {t.is_default && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 rounded">DÉFAUT</span>}
+                                                        </div>
+                                                        <p className="text-xs text-blue-600 font-bold">{t.taux}%</p>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {!t.is_default && <button onClick={() => handleSetDefaultTax(t.id)} className="p-2 text-yellow-500 bg-yellow-50 rounded"><Star className="w-4 h-4" /></button>}
+                                                        <button onClick={() => handleDeleteTax(t.id)} className="p-2 text-red-500 bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                    )}
+                                </div>
+
+                                {/* Desktop View (Existing List Style) */}
+                                <div className="hidden sm:block divide-y divide-gray-100">
+                                    {activeTab === 'categories' ? (
+                                        categories.length === 0 ? <div className="p-12 text-center text-sm text-gray-400">Aucune catégorie.</div> :
+                                            categories.map(c => (
+                                                <div key={c.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{c.nom}</div>
+                                                        <div className="text-[10px] text-gray-400 font-mono">ID: {c.id}</div>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteCategory(c.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                                                </div>
+                                            ))
+                                    ) : activeTab === 'lieux' ? (
+                                        lieux.length === 0 ? <div className="p-12 text-center text-sm text-gray-400">Aucun lieu de vente.</div> :
+                                            lieux.map(l => (
+                                                <div key={l.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{l.nom}</div>
+                                                        <div className="text-[10px] text-gray-400 font-mono">ID: {l.id}</div>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteLieu(l.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                                                </div>
+                                            ))
+                                    ) : activeTab === 'charges' ? (
+                                        charges.length === 0 ? <div className="p-12 text-center text-sm text-gray-400">Aucune charge fixe.</div> :
+                                            charges.map(c => (
+                                                <div key={c.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                                                    <div>
+                                                        <div className="text-sm font-medium text-gray-900">{c.nom}</div>
+                                                        <div className="text-xs text-gray-500 font-medium">{parseFloat(c.montant).toFixed(2)} € / {c.periode === 'jour' ? 'Jour' : 'Mois'}</div>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteCharge(c.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                                                </div>
+                                            ))
+                                    ) : activeTab === 'integrations' ? (
+                                        apiKeys.length === 0 ? <div className="p-12 text-center text-sm text-gray-400">Aucune intégration active.</div> :
+                                            apiKeys.map(k => (
+                                                <div key={k.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/30 border-b border-gray-100 group">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-sm font-bold text-gray-900 capitalize">{k.service_name.replace('_', ' ')}</div>
+                                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${k.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>ACTIF</span>
+                                                        </div>
+                                                        <div className="text-xs text-blue-600 font-mono mt-1 break-all bg-blue-50 px-2 py-1 rounded border border-blue-100 select-all">.../api/integrations/eos?api_key={k.api_key}</div>
+                                                    </div>
+                                                    <button onClick={() => handleCopyWebhookUrl(k)} className="shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded shadow-sm hover:bg-blue-700 transition">Copier Webhook</button>
+                                                </div>
+                                            ))
+                                    ) : (
+                                        taxes.length === 0 ? <div className="p-12 text-center text-sm text-gray-400">Aucune taxe configurée.</div> :
+                                            taxes.map(t => (
+                                                <div key={t.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="text-sm font-medium text-gray-900">{t.nom}</div>
+                                                            {t.is_default && <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">PAR DÉFAUT</span>}
+                                                        </div>
+                                                        <div className="text-xs text-blue-600 font-semibold">{t.taux}%</div>
+                                                    </div>
                                                     <div className="flex items-center gap-2">
-                                                        <div className="text-sm font-bold text-gray-900 capitalize">{k.service_name.replace('_', ' ')}</div>
-                                                        {k.actif ? (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">ACTIF</span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">INACTIF</span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-xs text-blue-600 font-mono mt-1 break-all bg-blue-50 px-2 py-1 rounded border border-blue-100 select-all">
-                                                        .../api/integrations/eos?api_key={k.api_key}
+                                                        {!t.is_default && <button onClick={() => handleSetDefaultTax(t.id)} className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors opacity-0 group-hover:opacity-100"><Star className="w-4 h-4" /></button>}
+                                                        <button onClick={() => handleDeleteTax(t.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleCopyWebhookUrl(k)}
-                                                    className="shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded shadow-sm hover:bg-blue-700 transition"
-                                                >
-                                                    Copier l'URL Webhook
-                                                </button>
-                                            </div>
-                                        ))
-                                    )
-                                ) : (
-                                    taxes.length === 0 ? (
-                                        <div className="p-12 text-center text-sm text-gray-400">Aucune taxe configurée.</div>
-                                    ) : (
-                                        taxes.map(t => (
-                                            <div key={t.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="text-sm font-medium text-gray-900">{t.nom}</div>
-                                                        {t.is_default && (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
-                                                                PAR DÉFAUT
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-xs text-blue-600 font-semibold">{t.taux}%</div>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {!t.is_default && (
-                                                        <button
-                                                            onClick={() => handleSetDefaultTax(t.id)}
-                                                            className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                            title="Définir comme taxe par défaut"
-                                                        >
-                                                            <Star className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleDeleteTax(t.id)}
-                                                        className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )
-                                )}
+                                            ))
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
