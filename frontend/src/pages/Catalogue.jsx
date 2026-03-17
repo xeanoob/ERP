@@ -18,8 +18,8 @@ const Catalogue = () => {
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
     const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', taxe_id: '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
     const [message, setMessage] = useState('');
-    const [editingPriceId, setEditingPriceId] = useState(null);
-    const [editingPriceValue, setEditingPriceValue] = useState('');
+    const [editingCell, setEditingCell] = useState(null);
+    const [editValue, setEditValue] = useState('');
     const [search, setSearch] = useState('');
 
     const fetchProducts = useCallback(async (page = 1, searchTerm = '') => {
@@ -164,20 +164,27 @@ const Catalogue = () => {
         }
     };
 
-    const startEditingPrice = (p) => {
-        setEditingPriceId(p.id);
-        setEditingPriceValue(parseFloat(p.prix_actif || 0).toFixed(2));
+    const startEdit = (p, field) => {
+        setEditingCell({ id: p.id, field });
+        setEditValue(field === 'prix_actif' ? parseFloat(p.prix_actif || 0).toFixed(2) : (p[field] || ''));
     };
 
-    const saveEditPrice = async (p) => {
-        if (!editingPriceId) return;
+    const saveEdit = async (p, customValue = null) => {
+        if (!editingCell) return;
+        const val = customValue !== null ? customValue : editValue;
+        
         try {
-            await axios.put(`${API_URL}/products/${p.id}`, {
+            const payload = {
                 ...p,
-                prix_actif: parseFloat(editingPriceValue)
-            });
-            toast.success('Prix mis à jour');
-            setEditingPriceId(null);
+                [editingCell.field]: (editingCell.field === 'prix_actif' || editingCell.field === 'seuil_alerte_stock') ? parseFloat(val) : val
+            };
+            
+            payload.categorie_id = payload.categorie_id || null;
+            payload.taxe_id = payload.taxe_id || null;
+
+            await axios.put(`${API_URL}/products/${p.id}`, payload);
+            toast.success('Produit mis à jour');
+            setEditingCell(null);
             fetchProducts(pagination.page, search);
         } catch (err) {
             console.error(err);
@@ -185,9 +192,9 @@ const Catalogue = () => {
         }
     };
 
-    const handlePriceKeyDown = (e, p) => {
-        if (e.key === 'Enter') saveEditPrice(p);
-        if (e.key === 'Escape') setEditingPriceId(null);
+    const handleEditKeyDown = (e, p) => {
+        if (e.key === 'Enter') saveEdit(p);
+        if (e.key === 'Escape') setEditingCell(null);
     };
 
     return (
@@ -331,31 +338,74 @@ const Catalogue = () => {
                             ) : products.map(p => (
                                 <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-4 py-3 text-sm text-gray-500 font-mono">{p.id}</td>
-                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.nom}</td>
-                                    <td className="px-4 py-3 text-sm">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200">
-                                            {p.categorie_nom || '-'}
-                                        </span>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900" onDoubleClick={() => startEdit(p, 'nom')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'nom' ? (
+                                            <input autoFocus type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onKeyDown={e => handleEditKeyDown(e, p)} onBlur={() => saveEdit(p)} className="w-full bg-white border border-gray-900 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : (
+                                            <span className="cursor-pointer hover:underline" title="Double clic pour modifier">{p.nom}</span>
+                                        )}
                                     </td>
-                                    <td className="px-4 py-3 text-sm">
-                                        {p.taxe_nom ? (
-                                            <span className="text-xs text-blue-600 font-medium">{p.taxe_nom} ({p.taxe_taux}%)</span>
-                                        ) : <span className="text-gray-400">-</span>}
+                                    <td className="px-4 py-3 text-sm" onDoubleClick={() => startEdit(p, 'categorie_id')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'categorie_id' ? (
+                                            <select autoFocus value={editValue || ''} onChange={e => { setEditValue(e.target.value); saveEdit(p, e.target.value); }} onBlur={() => setEditingCell(null)} className="w-full bg-white border border-gray-900 rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                                <option value="" disabled>Choisir</option>
+                                                {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                                            </select>
+                                        ) : (
+                                            <span className="cursor-pointer inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-400" title="Double clic pour modifier">
+                                                {p.categorie_nom || '-'}
+                                            </span>
+                                        )}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{p.origine || <span className="text-gray-400">-</span>}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{p.unite || 'kg'}</td>
-                                    <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium" onDoubleClick={() => startEditingPrice(p)}>
-                                        {editingPriceId === p.id ? (
-                                            <input autoFocus type="number" step="0.01" value={editingPriceValue} 
-                                                onChange={e => setEditingPriceValue(e.target.value)} 
-                                                onKeyDown={e => handlePriceKeyDown(e, p)} 
-                                                onBlur={() => saveEditPrice(p)} 
+                                    <td className="px-4 py-3 text-sm" onDoubleClick={() => startEdit(p, 'taxe_id')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'taxe_id' ? (
+                                            <select autoFocus value={editValue || ''} onChange={e => { setEditValue(e.target.value); saveEdit(p, e.target.value); }} onBlur={() => setEditingCell(null)} className="w-full bg-white border border-gray-900 rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                                <option value="">Aucune</option>
+                                                {taxes.map(t => <option key={t.id} value={t.id}>{t.nom}</option>)}
+                                            </select>
+                                        ) : p.taxe_nom ? (
+                                            <span className="cursor-pointer hover:underline text-xs text-blue-600 font-medium" title="Double clic pour modifier">{p.taxe_nom} ({p.taxe_taux}%)</span>
+                                        ) : <span className="cursor-pointer hover:underline text-gray-400" title="Double clic pour modifier">-</span>}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600" onDoubleClick={() => startEdit(p, 'origine')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'origine' ? (
+                                            <input autoFocus type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onKeyDown={e => handleEditKeyDown(e, p)} onBlur={() => saveEdit(p)} className="w-full bg-white border border-gray-900 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : (
+                                            <span className="cursor-pointer hover:underline" title="Double clic pour modifier">{p.origine || '-'}</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs" onDoubleClick={() => startEdit(p, 'unite')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'unite' ? (
+                                            <select autoFocus value={editValue || 'kg'} onChange={e => { setEditValue(e.target.value); saveEdit(p, e.target.value); }} onBlur={() => setEditingCell(null)} className="w-16 bg-white border border-gray-900 rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900">
+                                                <option value="kg">kg</option>
+                                                <option value="unité">unité</option>
+                                            </select>
+                                        ) : (
+                                            <span className="cursor-pointer hover:underline" title="Double clic pour modifier">{p.unite || 'kg'}</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium" onDoubleClick={() => startEdit(p, 'prix_actif')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'prix_actif' ? (
+                                            <input autoFocus type="number" step="0.01" value={editValue} 
+                                                onChange={e => setEditValue(e.target.value)} 
+                                                onKeyDown={e => handleEditKeyDown(e, p)} 
+                                                onBlur={() => saveEdit(p)} 
                                                 className="w-20 bg-white border border-gray-900 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-gray-900" />
                                         ) : (
                                             <span className="cursor-pointer hover:underline" title="Double clic pour modifier">{parseFloat(p.prix_actif || 0).toFixed(2)} €</span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-right text-gray-500">{p.seuil_alerte_stock ?? 10}</td>
+                                    <td className="px-4 py-3 text-sm text-right text-gray-500" onDoubleClick={() => startEdit(p, 'seuil_alerte_stock')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'seuil_alerte_stock' ? (
+                                            <input autoFocus type="number" step="1" value={editValue} 
+                                                onChange={e => setEditValue(e.target.value)} 
+                                                onKeyDown={e => handleEditKeyDown(e, p)} 
+                                                onBlur={() => saveEdit(p)} 
+                                                className="w-16 bg-white border border-gray-900 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-gray-900" />
+                                        ) : (
+                                            <span className="cursor-pointer hover:underline" title="Double clic pour modifier">{p.seuil_alerte_stock ?? 10}</span>
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-right">
                                         <button onClick={() => handleDelete(p.id)} className="text-gray-400 hover:text-red-600 transition-colors p-1 opacity-0 group-hover:opacity-100">
                                             <Trash2 className="w-4 h-4" />
