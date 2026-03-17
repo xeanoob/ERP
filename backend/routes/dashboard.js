@@ -40,6 +40,38 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY p.quantite_stock ASC
         `);
 
+        // Determine previous period for comparison
+        let prevStartDateStr, prevEndDateStr;
+        if (range === '7days') {
+            prevStartDateStr = "CURRENT_DATE - INTERVAL '13 days'";
+            prevEndDateStr = "CURRENT_DATE - INTERVAL '7 days'";
+        } else if (range === '30days') {
+            prevStartDateStr = "CURRENT_DATE - INTERVAL '59 days'";
+            prevEndDateStr = "CURRENT_DATE - INTERVAL '30 days'";
+        } else if (range === 'lastMonth') {
+            prevStartDateStr = "date_trunc('month', CURRENT_DATE - INTERVAL '2 month')::date";
+            prevEndDateStr = "(date_trunc('month', CURRENT_DATE - INTERVAL '1 month') - INTERVAL '1 day')::date";
+        } else if (range === '3months') {
+            prevStartDateStr = "CURRENT_DATE - INTERVAL '179 days'";
+            prevEndDateStr = "CURRENT_DATE - INTERVAL '90 days'";
+        } else if (range === 'thisYear') {
+            prevStartDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '1 year')::date";
+            prevEndDateStr = "date_trunc('year', CURRENT_DATE) - INTERVAL '1 day'";
+        } else if (range === 'lastYear') {
+            prevStartDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '2 year')::date";
+            prevEndDateStr = "(date_trunc('year', CURRENT_DATE - INTERVAL '1 year') - INTERVAL '1 day')::date";
+        }
+
+        const prevStatsRes = await pool.query(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * so.prix_reel ELSE 0 END), 0) as revenue,
+                COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as cost,
+                COALESCE(SUM(CASE WHEN so.type = 'perte' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as perte_cost
+            FROM sortie so
+            JOIN stock s ON so.stock_id = s.id
+            WHERE so.created_at BETWEEN ${prevStartDateStr} AND ${prevEndDateStr}
+        `);
+
         // We use generate_series with '1 day' to have consistent data points for any range
         const trendRes = await pool.query(`
             SELECT 
@@ -63,6 +95,7 @@ router.get('/stats', verifyToken, async (req, res) => {
 
         const counts = countsRes.rows[0];
         const charges = chargesRes.rows[0];
+        const prevStats = prevStatsRes.rows[0];
 
         const fixed_cost_day = parseFloat(charges.charges_jour) + (parseFloat(charges.charges_mois) / 30);
 
@@ -88,12 +121,24 @@ router.get('/stats', verifyToken, async (req, res) => {
             };
         });
 
+        // Add fixed costs to previous period for fair comparison
+        // We'll approximate the number of days in the period
+        const periodDaysRes = await pool.query(`SELECT COUNT(*) FROM generate_series(${startDateStr}, ${endDateStr}, '1 day'::interval)`);
+        const numDays = parseInt(periodDaysRes.rows[0].count);
+        const prev_total_cost = parseFloat(prevStats.cost) + (fixed_cost_day * numDays);
+
         res.json({
             period: {
                 revenue: total_revenue,
                 cost: total_cost,
                 perte_cost: total_pertes_cost,
                 margin: total_revenue - total_cost
+            },
+            previous_period: {
+                revenue: parseFloat(prevStats.revenue),
+                cost: prev_total_cost,
+                perte_cost: parseFloat(prevStats.perte_cost),
+                margin: parseFloat(prevStats.revenue) - prev_total_cost
             },
             trend: trend,
             counts: {

@@ -55,10 +55,20 @@ const Sorties = () => {
             </div>
 
             <div className="pro-card p-4 border-l-4 border-gray-900 mb-2 sm:mb-0">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction</p>
-                <p className="text-2xl font-mono font-bold text-gray-900">
-                    {((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)} €
-                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction (€)</p>
+                <input
+                    type="number"
+                    step="0.01"
+                    value={((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)}
+                    onChange={e => {
+                        const total = parseFloat(e.target.value) || 0;
+                        const qty = parseFloat(form.quantite_sortie) || 0;
+                        if (qty > 0) {
+                            setForm({ ...form, prix_reel: (total / qty).toFixed(2) });
+                        }
+                    }}
+                    className="text-2xl font-mono font-bold text-gray-900 bg-transparent border-none focus:outline-none w-full"
+                />
             </div>
 
             <div className="pro-card p-6">

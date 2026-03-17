@@ -31,7 +31,7 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
                 WHERE s.produit_id = $1
             ) sub
             WHERE restant > 0
-            ORDER BY created_at ASC
+            ORDER BY created_at ASC, s.id ASC
         `, [produit_id]);
 
         let stocks = stockRes.rows;

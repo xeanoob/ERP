@@ -150,6 +150,23 @@ const Dashboard = () => {
         }
     };
 
+    const TrendIndicator = ({ current, previous, label, inverse = false }) => {
+        if (!previous || previous === 0) return null;
+        const diff = current - previous;
+        const percent = (diff / previous) * 100;
+        const isPositive = diff > 0;
+        const colorClass = inverse 
+            ? (isPositive ? 'text-red-500' : 'text-emerald-500')
+            : (isPositive ? 'text-emerald-500' : 'text-red-500');
+
+        return (
+            <div className={`flex items-center gap-1 text-[10px] font-bold mt-1 ${colorClass}`}>
+                {isPositive ? '▲' : '▼'} {Math.abs(percent).toFixed(1)}%
+                <span className="text-gray-400 font-normal ml-1">vs préc.</span>
+            </div>
+        );
+    };
+
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
             <div className="flex justify-between items-center bg-white p-3 sm:p-4 rounded-md shadow-sm border border-gray-100">

@@ -92,7 +92,7 @@ const Layout = ({ children }) => {
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
                 <aside className={`absolute left-0 top-0 bottom-0 w-72 bg-[#111111] flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-out transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                     <div className="flex items-center justify-between px-5 py-6 border-b border-gray-800">
-                        <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase">Menu Principal</h1>
+                        <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase"></h1>
                         <button onClick={() => setMobileOpen(false)} className="text-gray-500 hover:text-white transition-colors">
                             <X className="w-5 h-5" />
                         </button>
