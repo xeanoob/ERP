@@ -11,6 +11,7 @@ const Configuration = () => {
     const [taxes, setTaxes] = useState([]);
     const [lieux, setLieux] = useState([]);
     const [charges, setCharges] = useState([]);
+    const [apiKeys, setApiKeys] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newCat, setNewCat] = useState('');
     const [newLieu, setNewLieu] = useState('');
@@ -25,16 +26,18 @@ const Configuration = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [catRes, taxRes, lieuRes, chargeRes] = await Promise.all([
+            const [catRes, taxRes, lieuRes, chargeRes, keysRes] = await Promise.all([
                 axios.get(`${API_URL}/categories`),
                 axios.get(`${API_URL}/taxes`),
                 axios.get(`${API_URL}/lieux_vente`),
-                axios.get(`${API_URL}/charges`)
+                axios.get(`${API_URL}/charges`),
+                axios.get(`${API_URL}/integrations/api-keys`)
             ]);
             setCategories(catRes.data);
             setTaxes(taxRes.data);
             setLieux(lieuRes.data);
             setCharges(chargeRes.data);
+            setApiKeys(keysRes.data);
         } catch (err) {
             console.error(err);
             toast.error('Erreur lors du chargement des données');
@@ -161,6 +164,30 @@ const Configuration = () => {
         }
     };
 
+    const handleGenerateEosKey = async () => {
+        setSaving(true);
+        try {
+            await axios.post(`${API_URL}/integrations/api-keys`, { service_name: 'balance_eos' });
+            fetchData();
+            toast.success('URL Secrète générée avec succès');
+        } catch (err) {
+            toast.error('Erreur lors de la génération de la clé');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCopyWebhookUrl = (key) => {
+        // Use the current origin if local, otherwise assume the deployed domain
+        let baseUrl = window.location.origin;
+        if (baseUrl.includes('localhost')) {
+            baseUrl = 'http://localhost:5000'; // Target specific backend port if local
+        }
+        const url = `${baseUrl}/api/integrations/eos?api_key=${key.api_key}`;
+        navigator.clipboard.writeText(url);
+        toast.success('URL Webhook copiée dans le presse-papier !');
+    };
+
     return (
         <div className="max-w-4xl mx-auto flex flex-col gap-6">
             <div className="flex items-center justify-between">
@@ -203,6 +230,14 @@ const Configuration = () => {
                 >
                     <Layers className="w-4 h-4" />
                     Charges Fixes
+                </button>
+                <button
+                    onClick={() => setActiveTab('integrations')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'integrations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                        } flex items-center gap-2`}
+                >
+                    <Star className="w-4 h-4" />
+                    Intégrations
                 </button>
             </div>
 
@@ -295,7 +330,7 @@ const Configuration = () => {
                                     Ajouter
                                 </button>
                             </form>
-                        ) : (
+                        ) : activeTab === 'charges' ? (
                             <form onSubmit={handleAddCharge} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Nom (ex: Loyer, Salaire...)</label>
@@ -338,7 +373,26 @@ const Configuration = () => {
                                     Ajouter
                                 </button>
                             </form>
-                        )}
+                        ) : activeTab === 'integrations' ? (
+                            <div className="space-y-4">
+                                <p className="text-xs text-gray-500">
+                                    Créez une Clé API privée pour permettre à votre balance connectée (ex: EOS) d'envoyer automatiquement les ventes vers Stocko.
+                                </p>
+                                <button
+                                    onClick={handleGenerateEosKey}
+                                    disabled={saving}
+                                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                    {apiKeys.find(k => k.service_name === 'balance_eos') ? 'Regénérer la Clé API' : 'Activer API Balance EOS'}
+                                </button>
+                                {apiKeys.find(k => k.service_name === 'balance_eos') && (
+                                    <p className="text-[10px] text-yellow-600 mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
+                                        Attention : Regénérer l'URL interdira l'accès à l'ancienne.
+                                    </p>
+                                )}
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 
@@ -347,10 +401,10 @@ const Configuration = () => {
                     <div className="pro-card min-h-[400px]">
                         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-gray-900">
-                                {activeTab === 'categories' ? 'Liste des Catégories' : activeTab === 'lieux' ? 'Lieux de Vente' : activeTab === 'charges' ? 'Vos Charges Fixes' : 'Liste des Taxes'}
+                                {activeTab === 'categories' ? 'Liste des Catégories' : activeTab === 'lieux' ? 'Lieux de Vente' : activeTab === 'charges' ? 'Vos Charges Fixes' : activeTab === 'integrations' ? 'Services Autorisés' : 'Liste des Taxes'}
                             </h3>
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                {activeTab === 'categories' ? categories.length : activeTab === 'lieux' ? lieux.length : activeTab === 'charges' ? charges.length : taxes.length} élément(s)
+                                {activeTab === 'categories' ? categories.length : activeTab === 'lieux' ? lieux.length : activeTab === 'charges' ? charges.length : activeTab === 'integrations' ? apiKeys.length : taxes.length} élément(s)
                             </span>
                         </div>
 
@@ -413,6 +467,34 @@ const Configuration = () => {
                                                     className="p-1.5 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )
+                                ) : activeTab === 'integrations' ? (
+                                    apiKeys.length === 0 ? (
+                                        <div className="p-12 text-center text-sm text-gray-400">Aucune intégration active.</div>
+                                    ) : (
+                                        apiKeys.map(k => (
+                                            <div key={k.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/30 border-b border-gray-100 group">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="text-sm font-bold text-gray-900 capitalize">{k.service_name.replace('_', ' ')}</div>
+                                                        {k.actif ? (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">ACTIF</span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">INACTIF</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-blue-600 font-mono mt-1 break-all bg-blue-50 px-2 py-1 rounded border border-blue-100 select-all">
+                                                        .../api/integrations/eos?api_key={k.api_key}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleCopyWebhookUrl(k)}
+                                                    className="shrink-0 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded shadow-sm hover:bg-blue-700 transition"
+                                                >
+                                                    Copier l'URL Webhook
                                                 </button>
                                             </div>
                                         ))
