@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
 import { AlertTriangle, Package, Truck, Users, TrendingUp } from 'lucide-react';
@@ -37,8 +37,7 @@ const Dashboard = () => {
     }, [range]);
 
     if (!stats || loading) return <div className="text-sm text-gray-500 font-medium p-4">Chargement des données...</div>;
-
-    const data = {
+    const data = useMemo(() => ({
         labels: (stats?.trend || []).map(t => {
             const date = new Date(t.jour);
             if (range === '7days') return date.toLocaleDateString('fr-FR', { weekday: 'short' });
@@ -86,9 +85,9 @@ const Dashboard = () => {
                 pointBorderWidth: 2,
             },
         ],
-    };
+    }), [stats, range]);
 
-    const options = {
+    const options = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -148,7 +147,7 @@ const Dashboard = () => {
                 }
             }
         }
-    };
+    }), []);
 
 
     return (

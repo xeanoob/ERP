@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Plus, Search, Check, ClipboardList, Pencil } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -262,13 +262,17 @@ const Inventaire = () => {
         toast.success('Inventaire PDF généré');
     };
 
-    const uniqueCategories = [...new Set(stocks.map(s => s.categorie_nom).filter(Boolean))].sort();
+    const uniqueCategories = useMemo(() => {
+        return [...new Set(stocks.map(s => s.categorie_nom).filter(Boolean))].sort();
+    }, [stocks]);
 
-    const filteredStocks = stocks.filter(s => {
-        const matchSearch = s.nom.toLowerCase().includes(search.toLowerCase());
-        const matchCategory = selectedCategory ? s.categorie_nom === selectedCategory : true;
-        return matchSearch && matchCategory;
-    });
+    const filteredStocks = useMemo(() => {
+        return stocks.filter(s => {
+            const matchSearch = s.nom.toLowerCase().includes(search.toLowerCase());
+            const matchCategory = selectedCategory ? s.categorie_nom === selectedCategory : true;
+            return matchSearch && matchCategory;
+        });
+    }, [stocks, search, selectedCategory]);
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-6">

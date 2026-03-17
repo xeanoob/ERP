@@ -24,51 +24,36 @@ router.get('/stats', verifyToken, async (req, res) => {
             endDateStr = "(date_trunc('year', CURRENT_DATE) - INTERVAL '1 day')::date";
         }
 
-        const countsRes = await pool.query(`
-            SELECT
-                (SELECT COUNT(*) FROM produit WHERE actif = TRUE) as total_produits,
-                (SELECT COUNT(*) FROM fournisseur WHERE actif = TRUE) as total_fournisseurs,
-                (SELECT COUNT(*) FROM categorie WHERE actif = TRUE) as total_categories
-        `);
+        const statsQuery = `
+            WITH period_totals AS (
+                SELECT 
+                    COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * so.prix_reel ELSE 0 END), 0) as revenue,
+                    COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as cost,
+                    COALESCE(SUM(CASE WHEN so.type = 'perte' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as perte_cost
+                FROM sortie so
+                JOIN stock s ON so.stock_id = s.id
+                WHERE so.created_at BETWEEN ${startDateStr} AND ${endDateStr}
+            ),
+            prev_totals AS (
+                SELECT 
+                    COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * so.prix_reel ELSE 0 END), 0) as revenue,
+                    COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as cost,
+                    COALESCE(SUM(CASE WHEN so.type = 'perte' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as perte_cost
+                FROM sortie so
+                JOIN stock s ON so.stock_id = s.id
+                WHERE so.created_at BETWEEN ${prevStartDateStr} AND ${prevEndDateStr}
+            ),
+            counts AS (
+                SELECT
+                    (SELECT COUNT(*) FROM produit WHERE actif = TRUE) as total_produits,
+                    (SELECT COUNT(*) FROM fournisseur WHERE actif = TRUE) as total_fournisseurs,
+                    (SELECT COUNT(*) FROM categorie WHERE actif = TRUE) as total_categories
+            )
+            SELECT * FROM period_totals, prev_totals as prev, counts;
+        `;
 
-        const alertsRes = await pool.query(`
-            SELECT p.id, p.nom, c.nom as categorie_nom, p.quantite_stock, p.seuil_alerte_stock
-            FROM produit p
-            LEFT JOIN categorie c ON p.categorie_id = c.id
-            WHERE p.actif = TRUE AND p.quantite_stock <= p.seuil_alerte_stock
-            ORDER BY p.quantite_stock ASC
-        `);
-
-        let prevStartDateStr, prevEndDateStr;
-        if (range === '7days') {
-            prevStartDateStr = "CURRENT_DATE - INTERVAL '13 days'";
-            prevEndDateStr = "CURRENT_DATE - INTERVAL '7 days'";
-        } else if (range === '30days') {
-            prevStartDateStr = "CURRENT_DATE - INTERVAL '59 days'";
-            prevEndDateStr = "CURRENT_DATE - INTERVAL '30 days'";
-        } else if (range === 'lastMonth') {
-            prevStartDateStr = "date_trunc('month', CURRENT_DATE - INTERVAL '2 month')::date";
-            prevEndDateStr = "(date_trunc('month', CURRENT_DATE - INTERVAL '1 month') - INTERVAL '1 day')::date";
-        } else if (range === '3months') {
-            prevStartDateStr = "CURRENT_DATE - INTERVAL '179 days'";
-            prevEndDateStr = "CURRENT_DATE - INTERVAL '90 days'";
-        } else if (range === 'thisYear') {
-            prevStartDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '1 year')::date";
-            prevEndDateStr = "date_trunc('year', CURRENT_DATE) - INTERVAL '1 day'";
-        } else if (range === 'lastYear') {
-            prevStartDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '2 year')::date";
-            prevEndDateStr = "(date_trunc('year', CURRENT_DATE - INTERVAL '1 year') - INTERVAL '1 day')::date";
-        }
-
-        const prevStatsRes = await pool.query(`
-            SELECT 
-                COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * so.prix_reel ELSE 0 END), 0) as revenue,
-                COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as cost,
-                COALESCE(SUM(CASE WHEN so.type = 'perte' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as perte_cost
-            FROM sortie so
-            JOIN stock s ON so.stock_id = s.id
-            WHERE so.created_at BETWEEN ${prevStartDateStr} AND ${prevEndDateStr}
-        `);
+        const statsRes = await pool.query(statsQuery);
+        const allStats = statsRes.rows[0];
 
         const trendRes = await pool.query(`
             SELECT 
@@ -90,25 +75,13 @@ router.get('/stats', verifyToken, async (req, res) => {
             FROM charge_fixe WHERE actif = TRUE
         `);
 
-        const counts = countsRes.rows[0];
         const charges = chargesRes.rows[0];
-        const prevStats = prevStatsRes.rows[0];
-
         const fixed_cost_day = parseFloat(charges.charges_jour) + (parseFloat(charges.charges_mois) / 30);
-
-        let total_revenue = 0;
-        let total_cost = 0;
-        let total_pertes_cost = 0;
 
         const trend = trendRes.rows.map(r => {
             const rev = parseFloat(r.revenue);
             const cost = parseFloat(r.cost) + fixed_cost_day;
             const perte_cost = parseFloat(r.perte_cost);
-            
-            total_revenue += rev;
-            total_cost += cost;
-            total_pertes_cost += perte_cost;
-            
             return {
                 jour: r.jour,
                 revenue: rev,
@@ -120,26 +93,26 @@ router.get('/stats', verifyToken, async (req, res) => {
 
         const periodDaysRes = await pool.query(`SELECT COUNT(*) FROM generate_series(${startDateStr}, ${endDateStr}, '1 day'::interval)`);
         const numDays = parseInt(periodDaysRes.rows[0].count);
-        const prev_total_cost = parseFloat(prevStats.cost) + (fixed_cost_day * numDays);
+        const prev_total_cost = parseFloat(allStats.prev_cost || 0) + (fixed_cost_day * numDays);
 
         res.json({
             period: {
-                revenue: total_revenue,
-                cost: total_cost,
-                perte_cost: total_pertes_cost,
-                margin: total_revenue - total_cost
+                revenue: parseFloat(allStats.revenue),
+                cost: parseFloat(allStats.cost) + (fixed_cost_day * numDays),
+                perte_cost: parseFloat(allStats.perte_cost),
+                margin: parseFloat(allStats.revenue) - (parseFloat(allStats.cost) + (fixed_cost_day * numDays))
             },
             previous_period: {
-                revenue: parseFloat(prevStats.revenue),
+                revenue: parseFloat(allStats.prev_revenue || 0),
                 cost: prev_total_cost,
-                perte_cost: parseFloat(prevStats.perte_cost),
-                margin: parseFloat(prevStats.revenue) - prev_total_cost
+                perte_cost: parseFloat(allStats.prev_perte_cost || 0),
+                margin: parseFloat(allStats.prev_revenue || 0) - prev_total_cost
             },
             trend: trend,
             counts: {
-                produits: parseInt(counts.total_produits),
-                fournisseurs: parseInt(counts.total_fournisseurs),
-                categories: parseInt(counts.total_categories),
+                produits: parseInt(allStats.total_produits),
+                fournisseurs: parseInt(allStats.total_fournisseurs),
+                categories: parseInt(allStats.total_categories),
             },
             alertes_stock: alertsRes.rows.map(r => ({
                 id: r.id,
