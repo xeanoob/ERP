@@ -77,6 +77,11 @@ const verifyApiKey = async (req, res, next) => {
     }
 };
 
+// Simple check to see if integration is active (for browser testing)
+router.get('/eos', (req, res) => {
+    res.json({ message: "API d'intégration EOS active. Veuillez utiliser une requête POST avec une api_key valide pour envoyer des données de vente." });
+});
+
 // Webhook for EOS Scale / Caisse
 // Expected payload: { "sales": [{ "nom": "Pomme", "poids_vendu": 12.5, "prix_total": 45.0, "lieu_vente_id": 1 }] }
 // or [{ ... }] array directly
