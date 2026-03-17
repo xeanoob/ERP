@@ -12,23 +12,37 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const Dashboard = () => {
     const [stats, setStats] = useState(null);
+    const [range, setRange] = useState('7days');
+    const [loading, setLoading] = useState(true);
+
+    const ranges = [
+        { value: '7days', label: '7 derniers jours' },
+        { value: '30days', label: '30 derniers jours' },
+        { value: 'lastMonth', label: 'Mois dernier' },
+        { value: '3months', label: '3 derniers mois' },
+        { value: 'thisYear', label: 'Cette année' },
+        { value: 'lastYear', label: 'L\'année dernière' }
+    ];
 
     useEffect(() => {
         const fetchStats = async () => {
+            setLoading(true);
             try {
-                const res = await axios.get(`${API_URL}/dashboard/stats`);
+                const res = await axios.get(`${API_URL}/dashboard/stats?range=${range}`);
                 setStats(res.data);
             } catch (err) { console.error(err); }
+            setLoading(false);
         };
         fetchStats();
-    }, []);
+    }, [range]);
 
-    if (!stats) return <div className="text-sm text-gray-500 font-medium">Chargement des données...</div>;
+    if (!stats || loading) return <div className="text-sm text-gray-500 font-medium p-4">Chargement des données...</div>;
 
     const data = {
         labels: (stats?.trend || []).map(t => {
             const date = new Date(t.jour);
-            return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+            if (range === '7days') return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
         }),
         datasets: [
             {
@@ -120,7 +134,7 @@ const Dashboard = () => {
             x: {
                 grid: { display: false },
                 border: { display: false },
-                ticks: { color: '#9ca3af', font: { size: 11, family: 'Inter' } }
+                ticks: { color: '#9ca3af', font: { size: 11, family: 'Inter' }, maxTicksLimit: 15 }
             },
             y: {
                 beginAtZero: true,
@@ -138,22 +152,30 @@ const Dashboard = () => {
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
-            {}
+            <div className="flex justify-between items-center bg-white p-3 sm:p-4 rounded-md shadow-sm border border-gray-100">
+                <h2 className="text-lg font-bold text-gray-900">Tableau de Bord</h2>
+                <select 
+                    value={range} 
+                    onChange={e => setRange(e.target.value)}
+                    className="bg-gray-50 border border-gray-200 text-gray-900 text-sm font-medium rounded-md focus:ring-gray-900 focus:border-gray-900 block p-2 cursor-pointer"
+                >
+                    {ranges.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+            </div>
+
+            {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="pro-card p-4 sm:p-5">
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>
-                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.today.revenue.toFixed(2)} €</p>
-                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">Mois: {stats.month.revenue.toFixed(2)} €</p>
+                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.period.revenue.toFixed(2)} €</p>
                 </div>
                 <div className="pro-card p-4 sm:p-5">
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Coût de Revient</p>
-                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.today.cost.toFixed(2)} €</p>
-                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">Mois: {stats.month.cost.toFixed(2)} €</p>
+                    <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.period.cost.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-4 sm:p-5 col-span-2 sm:col-span-1">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Marge Nette</p>
-                    <p className="text-xl sm:text-2xl font-semibold text-emerald-600 truncate">{stats.today.margin.toFixed(2)} €</p>
-                    <p className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">Mois: {stats.month.margin.toFixed(2)} €</p>
+                <div className="pro-card p-4 sm:p-5 col-span-2 sm:col-span-1 border-emerald-50 bg-emerald-50/10">
+                    <p className="text-[10px] sm:text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Marge Nette</p>
+                    <p className="text-xl sm:text-2xl font-bold text-emerald-600 truncate">{stats.period.margin.toFixed(2)} €</p>
                 </div>
             </div>
 
@@ -203,7 +225,7 @@ const Dashboard = () => {
             <div className="pro-card p-6">
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-900">Activité des 7 derniers jours</h3>
+                        <h3 className="text-sm font-semibold text-gray-900">Activité ({ranges.find(r => r.value === range)?.label})</h3>
                         <p className="text-xs text-gray-500 mt-0.5">Évolution du volume d'affaires et de la rentabilité</p>
                     </div>
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-md border border-gray-100">

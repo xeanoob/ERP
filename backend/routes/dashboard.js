@@ -6,13 +6,24 @@ const { verifyToken } = require('../middleware/auth');
 
 router.get('/stats', verifyToken, async (req, res) => {
     try {
-        const financeRes = await pool.query(`
-            SELECT 
-                COALESCE((SELECT SUM(so.quantite_sortie * so.prix_reel) FROM sortie so WHERE date_trunc('day', so.created_at) = CURRENT_DATE), 0) as revenue_today,
-                COALESCE((SELECT SUM(so.quantite_sortie * s.prix_achat_unitaire) FROM sortie so JOIN stock s ON so.stock_id = s.id WHERE date_trunc('day', so.created_at) = CURRENT_DATE), 0) as cost_today,
-                COALESCE((SELECT SUM(so.quantite_sortie * so.prix_reel) FROM sortie so WHERE date_trunc('month', so.created_at) = date_trunc('month', CURRENT_DATE)), 0) as revenue_month,
-                COALESCE((SELECT SUM(so.quantite_sortie * s.prix_achat_unitaire) FROM sortie so JOIN stock s ON so.stock_id = s.id WHERE date_trunc('month', so.created_at) = date_trunc('month', CURRENT_DATE)), 0) as cost_month
-        `);
+        const range = req.query.range || '7days';
+
+        let startDateStr = "CURRENT_DATE - INTERVAL '6 days'";
+        let endDateStr = "CURRENT_DATE";
+
+        if (range === '30days') {
+            startDateStr = "CURRENT_DATE - INTERVAL '29 days'";
+        } else if (range === 'lastMonth') {
+            startDateStr = "date_trunc('month', CURRENT_DATE - INTERVAL '1 month')::date";
+            endDateStr = "(date_trunc('month', CURRENT_DATE) - INTERVAL '1 day')::date";
+        } else if (range === '3months') {
+            startDateStr = "CURRENT_DATE - INTERVAL '89 days'";
+        } else if (range === 'thisYear') {
+            startDateStr = "date_trunc('year', CURRENT_DATE)::date";
+        } else if (range === 'lastYear') {
+            startDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '1 year')::date";
+            endDateStr = "(date_trunc('year', CURRENT_DATE) - INTERVAL '1 day')::date";
+        }
 
         const countsRes = await pool.query(`
             SELECT
@@ -29,12 +40,13 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY p.quantite_stock ASC
         `);
 
+        // We use generate_series with '1 day' to have consistent data points for any range
         const trendRes = await pool.query(`
             SELECT 
                 d.date::date as jour,
                 COALESCE(SUM(so.quantite_sortie * so.prix_reel), 0) as revenue,
                 COALESCE(SUM(so.quantite_sortie * s.prix_achat_unitaire), 0) as cost
-            FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day') d(date)
+            FROM generate_series(${startDateStr}, ${endDateStr}, '1 day'::interval) d(date)
             LEFT JOIN sortie so ON date_trunc('day', so.created_at) = d.date
             LEFT JOIN stock s ON so.stock_id = s.id
             GROUP BY d.date
@@ -48,30 +60,36 @@ router.get('/stats', verifyToken, async (req, res) => {
             FROM charge_fixe WHERE actif = TRUE
         `);
 
-        const stats = financeRes.rows[0];
         const counts = countsRes.rows[0];
         const charges = chargesRes.rows[0];
 
-        const fixed_cost_today = parseFloat(charges.charges_jour) + (parseFloat(charges.charges_mois) / 30);
-        const fixed_cost_month = (parseFloat(charges.charges_jour) * 30) + parseFloat(charges.charges_mois);
+        const fixed_cost_day = parseFloat(charges.charges_jour) + (parseFloat(charges.charges_mois) / 30);
+
+        let total_revenue = 0;
+        let total_cost = 0;
+
+        const trend = trendRes.rows.map(r => {
+            const rev = parseFloat(r.revenue);
+            const cost = parseFloat(r.cost) + fixed_cost_day;
+            
+            total_revenue += rev;
+            total_cost += cost;
+            
+            return {
+                jour: r.jour,
+                revenue: rev,
+                cost: cost,
+                margin: rev - cost
+            };
+        });
 
         res.json({
-            today: {
-                revenue: parseFloat(stats.revenue_today || 0),
-                cost: parseFloat(stats.cost_today || 0) + fixed_cost_today,
-                margin: parseFloat(stats.revenue_today || 0) - (parseFloat(stats.cost_today || 0) + fixed_cost_today)
+            period: {
+                revenue: total_revenue,
+                cost: total_cost,
+                margin: total_revenue - total_cost
             },
-            month: {
-                revenue: parseFloat(stats.revenue_month || 0),
-                cost: parseFloat(stats.cost_month || 0) + fixed_cost_month,
-                margin: parseFloat(stats.revenue_month || 0) - (parseFloat(stats.cost_month || 0) + fixed_cost_month)
-            },
-            trend: trendRes.rows.map(r => ({
-                jour: r.jour,
-                revenue: parseFloat(r.revenue),
-                cost: parseFloat(r.cost) + fixed_cost_today,
-                margin: parseFloat(r.revenue) - (parseFloat(r.cost) + fixed_cost_today)
-            })),
+            trend: trend,
             counts: {
                 produits: parseInt(counts.total_produits),
                 fournisseurs: parseInt(counts.total_fournisseurs),
