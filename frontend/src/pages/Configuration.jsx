@@ -198,10 +198,10 @@ const Configuration = () => {
             </div>
 
             {}
-            <div className="flex border-b border-gray-200">
+            <div className="flex border-b border-gray-200 overflow-x-auto hide-scrollbar sticky top-14 bg-[#F9FAFB] z-20 -mx-4 px-4 lg:mx-0 lg:px-0">
                 <button
                     onClick={() => setActiveTab('categories')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'categories' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-3 text-sm font-bold transition-colors border-b-2 whitespace-nowrap ${activeTab === 'categories' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'
                         } flex items-center gap-2`}
                 >
                     <Layers className="w-4 h-4" />
@@ -209,7 +209,7 @@ const Configuration = () => {
                 </button>
                 <button
                     onClick={() => setActiveTab('taxes')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'taxes' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'taxes' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'
                         } flex items-center gap-2`}
                 >
                     <Percent className="w-4 h-4" />
@@ -217,23 +217,23 @@ const Configuration = () => {
                 </button>
                 <button
                     onClick={() => setActiveTab('lieux')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'lieux' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'lieux' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'
                         } flex items-center gap-2`}
                 >
                     <MapPin className="w-4 h-4" />
-                    Lieux de Vente
+                    Lieux
                 </button>
                 <button
                     onClick={() => setActiveTab('charges')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'charges' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'charges' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'
                         } flex items-center gap-2`}
                 >
                     <Layers className="w-4 h-4" />
-                    Charges Fixes
+                    Charges
                 </button>
                 <button
                     onClick={() => setActiveTab('integrations')}
-                    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === 'integrations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === 'integrations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'
                         } flex items-center gap-2`}
                 >
                     <Star className="w-4 h-4" />
@@ -241,12 +241,12 @@ const Configuration = () => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {}
-                <div className="md:col-span-1">
-                    <div className="pro-card p-5 sticky top-6">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                            Ajouter {activeTab === 'categories' ? 'une catégorie' : activeTab === 'lieux' ? 'un lieu de vente' : activeTab === 'charges' ? 'une charge' : 'une taxe'}
+                <div className="lg:col-span-1 order-2 lg:order-1">
+                    <div className="pro-card p-5 lg:sticky lg:top-32">
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">
+                            Ajouter {activeTab === 'categories' ? 'une catégorie' : activeTab === 'lieux' ? 'un lieu' : activeTab === 'charges' ? 'une charge' : 'une taxe'}
                         </h3>
 
                         {activeTab === 'categories' ? (
@@ -397,10 +397,10 @@ const Configuration = () => {
                 </div>
 
                 {}
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2 order-1 lg:order-2">
                     <div className="pro-card min-h-[400px]">
                         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-gray-900">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
                                 {activeTab === 'categories' ? 'Liste des Catégories' : activeTab === 'lieux' ? 'Lieux de Vente' : activeTab === 'charges' ? 'Vos Charges Fixes' : activeTab === 'integrations' ? 'Services Autorisés' : 'Liste des Taxes'}
                             </h3>
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">

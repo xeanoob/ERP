@@ -153,7 +153,73 @@ const Utilisateurs = () => {
             )}
 
             {/* Table */}
-            <div className="pro-card overflow-hidden">
+            <div className="mobile-card-grid">
+                {loading ? (
+                    <div className="p-8 text-center text-sm text-gray-400">Chargement...</div>
+                ) : users.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-gray-400">Aucun utilisateur.</div>
+                ) : users.map(u => {
+                    const isSelf = u.id === currentUser?.id;
+                    return (
+                        <div key={u.id} className={`pro-card p-4 flex flex-col gap-4 ${!u.actif ? 'opacity-60 bg-gray-50' : ''}`}>
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                                        {u.nom?.charAt(0)?.toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                            {u.nom}
+                                            {isSelf && <span className="text-[10px] font-medium bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">VOUS</span>}
+                                        </h4>
+                                        <p className="text-xs text-gray-500">{u.email}</p>
+                                    </div>
+                                </div>
+                                {u.actif ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">ACTIF</span>
+                                ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-600">INACTIF</span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Rôle & Permissions</p>
+                                    {isSelf ? (
+                                        <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold border ${roleBadge(u.role)}`}>
+                                            {ROLES.find(r => r.value === u.role)?.label || u.role}
+                                        </span>
+                                    ) : (
+                                        <select value={u.role} onChange={e => handleRoleChange(u.id, e.target.value)}
+                                            className="bg-white border border-gray-200 rounded px-2 py-1 text-xs font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-900 cursor-pointer">
+                                            {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                                        </select>
+                                    )}
+                                </div>
+
+                                <div className="flex gap-2">
+                                    {!isSelf && (
+                                        <>
+                                            <button onClick={() => handleToggle(u.id)}
+                                                className={`p-2 rounded-md border transition-colors ${u.actif ? 'border-amber-100 text-amber-600 bg-amber-50' : 'border-green-100 text-green-600 bg-green-50'}`}
+                                                title={u.actif ? 'Désactiver' : 'Réactiver'}>
+                                                {u.actif ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                            </button>
+                                            <button onClick={() => handleDelete(u.id)}
+                                                className="p-2 rounded-md border border-red-100 text-red-600 bg-red-50 transition-colors"
+                                                title="Supprimer">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="desktop-table-container">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-200">

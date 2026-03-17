@@ -69,7 +69,76 @@ const Alertes = () => {
                 </div>
             )}
 
-            <div className="pro-card overflow-hidden">
+            <div className="mobile-card-grid">
+                {loading ? (
+                    Array(3).fill(0).map((_, i) => (
+                        <div key={i} className="pro-card p-4 space-y-3">
+                            <div className="h-4 bg-gray-100 rounded w-3/4 animate-pulse" />
+                            <div className="h-3 bg-gray-50 rounded w-1/2 animate-pulse" />
+                        </div>
+                    ))
+                ) : products.length === 0 ? (
+                    <div className="pro-card p-8 text-center text-sm text-gray-400">Aucun produit.</div>
+                ) : products.map(p => {
+                    const qty = parseFloat(p.quantite_stock);
+                    const seuil = parseFloat(p.seuil_alerte_stock || 10);
+                    const isLow = qty <= seuil;
+                    const isCritical = qty <= seuil * 0.5;
+                    const isEditing = editingId === p.id;
+
+                    return (
+                        <div key={p.id} className={`pro-card p-4 flex flex-col gap-3 ${isLow ? 'border-red-200 bg-red-50/20' : ''}`}>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900">{p.nom}</h4>
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">{p.categorie_nom || '-'}</p>
+                                </div>
+                                {isCritical ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">CRITIQUE</span>
+                                ) : isLow ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">BAS</span>
+                                ) : (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700">OK</span>
+                                )}
+                            </div>
+
+                            <div className="flex items-end justify-between border-t border-gray-100 pt-3">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stock Actuel</p>
+                                    <p className={`text-lg font-mono font-bold ${isCritical ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-gray-900'}`}>
+                                        {qty.toFixed(1)} <span className="text-xs font-sans text-gray-400 font-normal">{p.unite || 'kg'}</span>
+                                    </p>
+                                </div>
+
+                                <div className="text-right space-y-1">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Seuil d'Alerte</p>
+                                    {isEditing ? (
+                                        <div className="flex items-center gap-1">
+                                            <input
+                                                type="number" step="1" min="0"
+                                                value={editValue}
+                                                onChange={e => setEditValue(e.target.value)}
+                                                onKeyDown={e => handleKeyDown(e, p)}
+                                                autoFocus
+                                                className="w-16 bg-white border-2 border-gray-900 rounded px-2 py-1 text-sm text-right font-mono focus:outline-none"
+                                            />
+                                            <button onClick={() => saveEdit(p)} className="p-1 text-green-600"><Check className="w-4 h-4" /></button>
+                                            <button onClick={cancelEdit} className="p-1 text-gray-400"><X className="w-4 h-4" /></button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-end gap-2 group">
+                                            <span className="text-sm font-bold text-gray-700">{seuil.toFixed(0)} <span className="text-xs font-normal text-gray-400">{p.unite || 'kg'}</span></span>
+                                            <button onClick={() => startEdit(p)} className="text-[10px] font-bold text-blue-600 uppercase underline decoration-blue-200">Modifier</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="desktop-table-container">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[500px]">
                         <thead className="bg-gray-50 border-b border-gray-200">
