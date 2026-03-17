@@ -44,39 +44,43 @@ L'inventaire est géré par lots dans la table `stock`. Lorsqu'une vente est eff
 ## Fonctionnalités
 
 - **Authentification** — Login JWT avec rôles (vendeur, stock, manager)
-- **Gestion Utilisateurs** — Création de comptes, changement de rôles, activation/désactivation (manager only)
-- **Catalogue Produits** — CRUD, recherche, pagination, prix actif, seuil d'alerte, taxes
-- **Configuration Unifiée** — Gestion des catégories et des taxes dans un seul espace
-- **Inventaire** — Entrées de stock liées aux fournisseurs, édition des seuils inline
-- **Ventes** — Déduction FIFO automatique, prix réel
-- **Historique des Ventes** — Filtres par date et produit, KPI en temps réel
-- **Fournisseurs** — Carnet d'adresses fournisseurs avec recherche
-- **Alertes d'Approvisionnement** — Page dédiée avec statuts OK/BAS/CRITIQUE
-- **Dashboard** — CA/coût/marge (jour + mois), compteurs, alertes stock bas
-- **Mobile-First** — Menu burger, cards sur mobile, tables sur desktop
+- **Catalogue Produits** — CRUD dynamique avec édition complète en ligne (Nom, Origine, Unité, Taxes, Prix)
+- **Gestion Unifiée** — Configuration centralisée des Catégories, Taxes (avec option par défaut), Lieux de Vente et Charges Fixes
+- **Intégration Balance (API)** — Génération de clés Webhook (`api_keys`) pour synchronisation automatique des balances connectées (ex: balance EOS)
+- **Dashboard Dynamique** — CA/coût/marge avec déduction dynamique des charges fixes selon la période choisie (7j, 30j, annuel...)
+- **Inventaire Simplifié** — Mode liste épuré avec gestion des alertes d'approvisionnement et filtres par catégorie
+- **Ventes & Historique** — Saisie des ventes avec Lieux de vente et déduction FIFO automatique
+- **Exports** — Exportation un-clic en PDF et CSV du catalogue complet, inventaire ou historique
+- **Mobile-First** — Interface réactive, adaptée aux smartphones et tablettes
 
 ## Schéma BDD (noms singulier)
 
 ```
 utilisateur
 fournisseur ──┐
-              ├── stock ──── sortie
+              ├── stock ──── sortie ──── lieu_vente
 produit ──────┘
   │      │
 categorie  taxe
+
+charge_fixe
+api_keys
 ```
 
 | Table | Colonnes principales |
 |-------|---------------------|
-| `produit` | nom, categorie_id, taxe_id, variete, **quantite_stock**, **prix_actif**, seuil_alerte_stock |
+| `produit` | nom, categorie_id, taxe_id, **origine**, **unite**, quantite_stock, prix_actif, seuil_alerte_stock |
 | `categorie` | nom, actif |
-| `taxe` | nom, taux, actif |
-| `stock` | produit_id, fournisseur_id, **quantite_achetee**, prix_achat_unitaire |
-| `sortie` | stock_id, quantite_sortie, **prix_reel** |
+| `taxe` | nom, taux, **is_default**, actif |
+| `stock` | produit_id, fournisseur_id, quantite_achetee, prix_achat_unitaire |
+| `sortie` | stock_id, **lieu_vente_id**, quantite_sortie, prix_reel |
 | `fournisseur` | nom, contact, email, telephone, adresse |
 | `utilisateur` | nom, email, mot_de_passe, role |
+| `lieu_vente`| nom, actif |
+| `charge_fixe`| nom, montant, periode, actif |
+| `api_keys` | service_name, api_key, actif |
 
-> **Règle MCD** : aucune donnée calculée n'est stockée. Marges et moyennes sont calculées à la volée.
+> **Règle MCD** : aucune donnée calculée n'est stockée. Marges, couts des charges directes et KPI de périodes sont calculés à la volée.
 
 ## Installation
 
