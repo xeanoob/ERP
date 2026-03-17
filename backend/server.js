@@ -48,7 +48,7 @@ app.use('/api/charges', require('./routes/charges'));
 
 
 app.get('/', (req, res) => {
-    res.json({ status: 'API ERP Marché is running' });
+    res.json({ status: 'API Stocko is running' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

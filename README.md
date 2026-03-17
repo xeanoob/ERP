@@ -1,4 +1,4 @@
-# Mini ERP — Gestion de Marché
+# Stocko — Gestion de Marché
 
 Application de gestion commerciale pour marché de produits frais. Suivi des stocks (FIFO), gestion fournisseurs, alertes de seuil, et tableau de bord financier. Interface mobile-first.
 

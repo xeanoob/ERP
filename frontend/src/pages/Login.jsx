@@ -29,7 +29,7 @@ const Login = () => {
         <div className="fixed inset-0 bg-[#0A0A0A] flex items-center justify-center p-4 overflow-auto">
             <div className="w-full max-w-sm">
                 <div className="mb-10 text-center">
-                    <h1 className="text-sm font-semibold text-white uppercase tracking-widest">Mini ERP</h1>
+                    <h1 className="text-sm font-semibold text-white uppercase tracking-widest">Stocko</h1>
                     <p className="text-xs text-gray-500 mt-1">Connexion à votre espace de gestion</p>
                 </div>
 

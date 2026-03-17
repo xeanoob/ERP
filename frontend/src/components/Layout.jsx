@@ -49,7 +49,7 @@ const Layout = ({ children }) => {
     const NavContent = () => (
         <>
             <div className="px-5 py-6 border-b border-gray-800">
-                <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase">Mon ERP</h1>
+                <h1 className="text-sm font-bold tracking-widest text-gray-400 uppercase">Stocko</h1>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
                 {navItems.map(item => {
@@ -106,7 +106,7 @@ const Layout = ({ children }) => {
                 <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 shrink-0 sticky top-0 z-30">
                     <div className="flex items-center gap-3 min-w-0">
                         <h2 className="text-sm font-semibold text-gray-800 capitalize truncate">
-                            {navItems.find(n => n.path === location.pathname)?.label || 'ERP'}
+                            {navItems.find(n => n.path === location.pathname)?.label || 'Stocko'}
                         </h2>
                     </div>
                     <div className="flex items-center gap-4">
