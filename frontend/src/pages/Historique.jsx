@@ -60,7 +60,7 @@ const Historique = () => {
         
         doc.setFontSize(22);
         doc.setTextColor(17, 24, 39);
-        doc.text("Rapport des Ventes", 14, 22);
+        doc.text("Rapport des Sorties", 14, 22);
 
         doc.setFontSize(10);
         doc.setTextColor(107, 114, 128);
@@ -74,7 +74,7 @@ const Historique = () => {
 
         doc.setFontSize(9);
         doc.setTextColor(107, 114, 128);
-        doc.text("TOTAL VENTES", 20, 50);
+        doc.text("TOTAL SORTIES", 20, 50);
         doc.text("C.A. TOTAL", 80, 50);
         doc.text("MARGE NETTE", 140, 50);
 
@@ -111,7 +111,7 @@ const Historique = () => {
             }
         });
 
-        doc.save(`rapport_ventes_${new Date().toISOString().split('T')[0]}.pdf`);
+        doc.save(`rapport_sorties_${new Date().toISOString().split('T')[0]}.pdf`);
         toast.success('Rapport PDF généré');
     };
 
@@ -131,7 +131,7 @@ const Historique = () => {
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">
             <div className="flex justify-between items-end">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Historique des Ventes</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">Historique des Sorties</h2>
                     <p className="text-sm text-gray-500">Consultez et filtrez l'ensemble des transactions.</p>
                 </div>
                 <ExportMenu onExportCSV={exportCSV} onExportPDF={exportPDF} label="Rapport / Export" />
@@ -159,7 +159,7 @@ const Historique = () => {
             {/* KPI résumé */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 <div className="pro-card p-3 sm:p-4">
-                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Ventes</p>
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Sorties</p>
                     <p className="text-lg sm:text-xl font-semibold text-gray-900">{filtered.length}</p>
                 </div>
                 <div className="pro-card p-3 sm:p-4">
@@ -183,11 +183,22 @@ const Historique = () => {
                     ) : filtered.map(s => (
                         <div key={s.id} className="px-4 py-3 space-y-1">
                             <div className="flex justify-between items-start">
-                                <span className="text-sm font-medium text-gray-900">{s.produit_nom}</span>
-                                <span className="text-sm font-semibold text-gray-900">{(parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)} €</span>
+                                <span className="text-sm font-medium text-gray-900">
+                                    {s.produit_nom}
+                                    {s.type === 'perte' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">PERTE</span>}
+                                </span>
+                                {s.type === 'perte' ? (
+                                    <span className="text-sm font-semibold text-red-600">-{(parseFloat(s.quantite_sortie) * parseFloat(s.prix_achat_unitaire)).toFixed(2)} €</span>
+                                ) : (
+                                    <span className="text-sm font-semibold text-gray-900">{(parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)} €</span>
+                                )}
                             </div>
                             <div className="flex justify-between text-xs text-gray-500">
-                                <span>{parseFloat(s.quantite_sortie).toFixed(1)} * {parseFloat(s.prix_reel).toFixed(2)} €</span>
+                                {s.type === 'perte' ? (
+                                    <span>{parseFloat(s.quantite_sortie).toFixed(1)} * {parseFloat(s.prix_achat_unitaire).toFixed(2)} € (coût d'achat)</span>
+                                ) : (
+                                    <span>{parseFloat(s.quantite_sortie).toFixed(1)} * {parseFloat(s.prix_reel).toFixed(2)} €</span>
+                                )}
                             </div>
                             <div className="text-[10px] text-gray-400 flex justify-between">
                                 <span>{new Date(s.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
@@ -216,17 +227,26 @@ const Historique = () => {
                             ) : filtered.length === 0 ? (
                                 <tr><td colSpan="5" className="px-4 py-8 text-center text-sm text-gray-500">Aucune vente.</td></tr>
                             ) : filtered.map(s => (
-                                <tr key={s.id} className="hover:bg-gray-50/50 transition-colors group">
+                                <tr key={s.id} className={`hover:bg-gray-50/50 transition-colors group ${s.type === 'perte' ? 'bg-red-50/20' : ''}`}>
                                     <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
                                         {new Date(s.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         <span className="text-xs text-gray-400 ml-1">{new Date(s.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                                     </td>
                                     <td className="px-4 py-3 text-sm font-medium text-gray-500">{s.lieu_vente_nom || '-'}</td>
-                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{s.produit_nom}</td>
+                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                        {s.produit_nom}
+                                        {s.type === 'perte' && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">PERTE</span>}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-right text-gray-900">{parseFloat(s.quantite_sortie).toFixed(1)}</td>
-                                    <td className="px-4 py-3 text-sm text-right text-gray-600">{parseFloat(s.prix_reel).toFixed(2)} €</td>
+                                    <td className="px-4 py-3 text-sm text-right text-gray-600">
+                                        {s.type === 'perte' ? '-' : `${parseFloat(s.prix_reel).toFixed(2)} €`}
+                                    </td>
                                     <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
-                                        {(parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)} €
+                                        {s.type === 'perte' ? (
+                                            <span className="text-red-500">-{(parseFloat(s.quantite_sortie) * parseFloat(s.prix_achat_unitaire)).toFixed(2)} €</span>
+                                        ) : (
+                                            <span>{(parseFloat(s.quantite_sortie) * parseFloat(s.prix_reel)).toFixed(2)} €</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

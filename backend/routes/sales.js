@@ -7,12 +7,18 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res) => {
     const client = await pool.connect();
     try {
-        let { produit_id, quantite_sortie, prix_reel, lieu_vente_id } = req.body;
+        let { produit_id, quantite_sortie, prix_reel, lieu_vente_id, type } = req.body;
         produit_id = parseInt(produit_id);
         lieu_vente_id = lieu_vente_id ? parseInt(lieu_vente_id) : null;
+        type = type || 'vente'; // Default to "vente"
 
-        if (isNaN(produit_id) || quantite_sortie <= 0 || prix_reel < 0) {
+        if (isNaN(produit_id) || quantite_sortie <= 0 || (type === 'vente' && prix_reel < 0)) {
             return res.status(400).json('Invalid quantity or price');
+        }
+
+        if (type === 'perte') {
+            prix_reel = 0;
+            lieu_vente_id = null; // A loss doesn't happen at a specific point of sale usually
         }
 
         await client.query('BEGIN');
@@ -44,8 +50,8 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
             let qtyToTake = Math.min(parseFloat(s.restant), qtyNeeded);
 
             const sortieRes = await client.query(
-                'INSERT INTO sortie (stock_id, lieu_vente_id, quantite_sortie, prix_reel, created_by) VALUES($1, $2, $3, $4, $5) RETURNING *',
-                [s.id, lieu_vente_id, qtyToTake, prix_reel, req.user.id]
+                'INSERT INTO sortie (stock_id, lieu_vente_id, quantite_sortie, prix_reel, created_by, type) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
+                [s.id, lieu_vente_id, qtyToTake, prix_reel, req.user.id, type]
             );
 
             sortiesCreated.push(sortieRes.rows[0]);

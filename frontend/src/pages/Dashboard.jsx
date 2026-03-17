@@ -164,7 +164,7 @@ const Dashboard = () => {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div className="pro-card p-4 sm:p-5">
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Chiffre d'Affaires</p>
                     <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.period.revenue.toFixed(2)} €</p>
@@ -173,7 +173,11 @@ const Dashboard = () => {
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Coût de Revient</p>
                     <p className="text-lg sm:text-2xl font-semibold text-gray-900 truncate">{stats.period.cost.toFixed(2)} €</p>
                 </div>
-                <div className="pro-card p-4 sm:p-5 col-span-2 sm:col-span-1 border-emerald-50 bg-emerald-50/10">
+                <div className="pro-card p-4 sm:p-5 border-red-50 bg-red-50/10">
+                    <p className="text-[10px] sm:text-xs font-semibold text-red-800 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Coût des Pertes</p>
+                    <p className="text-lg sm:text-2xl font-semibold text-red-600 truncate">{stats.period.perte_cost?.toFixed(2) || '0.00'} €</p>
+                </div>
+                <div className="pro-card p-4 sm:p-5 border-emerald-50 bg-emerald-50/10">
                     <p className="text-[10px] sm:text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1 sm:mb-2 line-clamp-1">Marge Nette</p>
                     <p className="text-xl sm:text-2xl font-bold text-emerald-600 truncate">{stats.period.margin.toFixed(2)} €</p>
                 </div>

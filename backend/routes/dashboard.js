@@ -44,8 +44,9 @@ router.get('/stats', verifyToken, async (req, res) => {
         const trendRes = await pool.query(`
             SELECT 
                 d.date::date as jour,
-                COALESCE(SUM(so.quantite_sortie * so.prix_reel), 0) as revenue,
-                COALESCE(SUM(so.quantite_sortie * s.prix_achat_unitaire), 0) as cost
+                COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * so.prix_reel ELSE 0 END), 0) as revenue,
+                COALESCE(SUM(CASE WHEN so.type = 'vente' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as cost,
+                COALESCE(SUM(CASE WHEN so.type = 'perte' THEN so.quantite_sortie * s.prix_achat_unitaire ELSE 0 END), 0) as perte_cost
             FROM generate_series(${startDateStr}, ${endDateStr}, '1 day'::interval) d(date)
             LEFT JOIN sortie so ON date_trunc('day', so.created_at) = d.date
             LEFT JOIN stock s ON so.stock_id = s.id
@@ -67,18 +68,22 @@ router.get('/stats', verifyToken, async (req, res) => {
 
         let total_revenue = 0;
         let total_cost = 0;
+        let total_pertes_cost = 0;
 
         const trend = trendRes.rows.map(r => {
             const rev = parseFloat(r.revenue);
             const cost = parseFloat(r.cost) + fixed_cost_day;
+            const perte_cost = parseFloat(r.perte_cost);
             
             total_revenue += rev;
             total_cost += cost;
+            total_pertes_cost += perte_cost;
             
             return {
                 jour: r.jour,
                 revenue: rev,
                 cost: cost,
+                perte_cost: perte_cost,
                 margin: rev - cost
             };
         });
@@ -87,6 +92,7 @@ router.get('/stats', verifyToken, async (req, res) => {
             period: {
                 revenue: total_revenue,
                 cost: total_cost,
+                perte_cost: total_pertes_cost,
                 margin: total_revenue - total_cost
             },
             trend: trend,

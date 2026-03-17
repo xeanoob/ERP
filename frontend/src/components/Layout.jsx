@@ -31,7 +31,7 @@ const Layout = ({ children }) => {
         { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['vendeur', 'stock', 'manager'] },
         { path: '/catalogue', label: 'Catalogue', icon: Package, roles: ['vendeur', 'stock', 'manager'] },
         { path: '/inventaire', label: 'Inventaire', icon: TrendingUp, roles: ['stock', 'manager'] },
-        { path: '/sorties', label: 'Ventes', icon: ShoppingCart, roles: ['vendeur', 'manager'] },
+        { path: '/sorties', label: 'Sorties', icon: ShoppingCart, roles: ['vendeur', 'manager'] },
         { path: '/historique', label: 'Historique', icon: Clock, roles: ['vendeur', 'manager'] },
         { path: '/fournisseurs', label: 'Fournisseurs', icon: Truck, roles: ['stock', 'manager'] },
         { path: '/alertes', label: 'Alertes', icon: Bell, roles: ['stock', 'manager'] },
@@ -43,7 +43,7 @@ const Layout = ({ children }) => {
 
     
     const bottomNavItems = navItems.filter(item =>
-        ['Dashboard', 'Catalogue', 'Ventes', 'Historique'].includes(item.label)
+        ['Dashboard', 'Catalogue', 'Sorties', 'Historique'].includes(item.label)
     );
 
     const NavContent = () => (

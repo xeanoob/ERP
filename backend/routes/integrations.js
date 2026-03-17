@@ -138,9 +138,9 @@ router.post('/eos', verifyApiKey, async (req, res) => {
 
             // Register the sale (sortie)
             await client.query(`
-                INSERT INTO sortie (produit_id, stock_id, quantite_sortie, prix_reel, lieu_vente_id, type)
-                VALUES ($1, $2, $3, $4, $5, 'vente')
-            `, [product.id, stockId, qteVendue, prixUnitaireReel, item.lieu_vente_id || null]);
+                INSERT INTO sortie (stock_id, quantite_sortie, prix_reel, lieu_vente_id, type)
+                VALUES ($1, $2, $3, $4, 'vente')
+            `, [stockId, qteVendue, prixUnitaireReel, item.lieu_vente_id || null]);
 
             // Update main product stock
             await client.query('UPDATE produit SET quantite_stock = quantite_stock - $1 WHERE id = $2', [qteVendue, product.id]);

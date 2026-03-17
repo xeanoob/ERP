@@ -9,7 +9,7 @@ const Sorties = () => {
     const [products, setProducts] = useState([]);
     const [lieux, setLieux] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ produit_id: '', quantite_sortie: '', prix_reel: '', lieu_vente_id: '' });
+    const [form, setForm] = useState({ produit_id: '', quantite_sortie: '', prix_reel: '', lieu_vente_id: '', type: 'vente' });
     const [message, setMessage] = useState('');
 
     useEffect(() => {
@@ -44,8 +44,8 @@ const Sorties = () => {
         <div className="max-w-4xl mx-auto flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900 font-mono tracking-tight uppercase">Nouvelle Vente</h2>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Enregistrement d'une transaction directe</p>
+                    <h2 className="text-lg font-semibold text-gray-900 font-mono tracking-tight uppercase">Sortie de Stock</h2>
+                    <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Enregistrer une vente ou une perte</p>
                 </div>
                 {message && (
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-bold animate-in fade-in duration-300">
@@ -54,7 +54,22 @@ const Sorties = () => {
                 )}
             </div>
 
-            <div className="pro-card p-6">
+            <div className="flex items-center gap-2 mb-2 p-1 bg-gray-100 rounded-lg w-fit">
+                <button
+                    onClick={() => setForm({ ...form, type: 'vente' })}
+                    className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-md transition-all ${form.type === 'vente' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    Nouvelle Vente
+                </button>
+                <button
+                    onClick={() => setForm({ ...form, type: 'perte' })}
+                    className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-md transition-all ${form.type === 'perte' ? 'bg-red-500 text-white shadow-sm' : 'text-gray-500 hover:text-red-500'}`}
+                >
+                    Déclarer une Perte
+                </button>
+            </div>
+
+            <div className={`pro-card p-6 ${form.type === 'perte' ? 'border-2 border-red-100 bg-red-50/10' : ''}`}>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="sm:col-span-2">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Produit</label>
@@ -76,22 +91,24 @@ const Sorties = () => {
                         </select>
                     </div>
 
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lieu de Vente (Optionnel)</label>
-                        <select
-                            value={form.lieu_vente_id}
-                            onChange={e => setForm({ ...form, lieu_vente_id: e.target.value })}
-                            className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-medium focus:border-gray-900 focus:outline-none transition-colors"
-                        >
-                            <option value="">Sélectionner un lieu...</option>
-                            {lieux.map(l => (
-                                <option key={l.id} value={l.id}>{l.nom}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {form.type === 'vente' && (
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lieu de Vente (Optionnel)</label>
+                            <select
+                                value={form.lieu_vente_id}
+                                onChange={e => setForm({ ...form, lieu_vente_id: e.target.value })}
+                                className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-medium focus:border-gray-900 focus:outline-none transition-colors"
+                            >
+                                <option value="">Sélectionner un lieu...</option>
+                                {lieux.map(l => (
+                                    <option key={l.id} value={l.id}>{l.nom}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Quantité</label>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Quantité sortie</label>
                         <input
                             type="number"
                             step="0.1"
@@ -103,38 +120,42 @@ const Sorties = () => {
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prix de Vente Unitaire (€)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            required
-                            value={form.prix_reel}
-                            onChange={e => setForm({ ...form, prix_reel: e.target.value })}
-                            placeholder="0.00"
-                            className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-mono focus:border-gray-900 focus:outline-none transition-colors"
-                        />
-                    </div>
+                    {form.type === 'vente' && (
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prix de Vente Unitaire (€)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                required
+                                value={form.prix_reel}
+                                onChange={e => setForm({ ...form, prix_reel: e.target.value })}
+                                placeholder="0.00"
+                                className="w-full bg-white border-2 border-gray-100 rounded px-4 py-3 text-sm font-mono focus:border-gray-900 focus:outline-none transition-colors"
+                            />
+                        </div>
+                    )}
 
                     <div className="sm:col-span-2 pt-4">
                         <button
                             type="submit"
-                            className="w-full bg-gray-900 text-white py-4 rounded font-bold uppercase tracking-widest text-xs hover:bg-black transition-all shadow-lg active:scale-[0.98]"
+                            className={`w-full text-white py-4 rounded font-bold uppercase tracking-widest text-xs transition-all shadow-lg active:scale-[0.98] ${form.type === 'perte' ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-900 hover:bg-black'}`}
                         >
-                            Valider la Transaction
+                            {form.type === 'perte' ? 'Confirmer la Perte' : 'Valider la Transaction'}
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="pro-card p-4 border-l-4 border-gray-900">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction</p>
-                    <p className="text-2xl font-mono font-bold text-gray-900">
-                        {((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)} €
-                    </p>
+            {form.type === 'vente' && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="pro-card p-4 border-l-4 border-gray-900">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Transaction</p>
+                        <p className="text-2xl font-mono font-bold text-gray-900">
+                            {((parseFloat(form.quantite_sortie) || 0) * (parseFloat(form.prix_reel) || 0)).toFixed(2)} €
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

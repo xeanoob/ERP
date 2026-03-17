@@ -20,7 +20,7 @@ Application de gestion commerciale pour marché de produits frais. Suivi des sto
 - **`src/pages/`** : Composants de pages principaux.
   - **`Inventaire.jsx`** : Vue d'ensemble des stocks et gestion des seuils d'alerte.
   - **`Catalogue.jsx`** : Gestion brute des produits (CRUD).
-  - **`Sorties.jsx`** : Interface de saisie des ventes (déclenche la logique FIFO).
+  - **`Sorties.jsx`** : Interface de saisie des sorties (ventes ou pertes, déclenche la logique FIFO).
 - **`src/components/`** : Composants UI réutilisables (Layout, Navbar, etc.).
 
 ## Logique FIFO (First In, First Out)
@@ -49,7 +49,7 @@ L'inventaire est géré par lots dans la table `stock`. Lorsqu'une vente est eff
 - **Intégration Balance (API)** — Génération de clés Webhook (`api_keys`) pour synchronisation automatique des balances connectées (ex: balance EOS)
 - **Dashboard Dynamique** — CA/coût/marge avec déduction dynamique des charges fixes selon la période choisie (7j, 30j, annuel...)
 - **Inventaire Simplifié** — Mode liste épuré avec gestion des alertes d'approvisionnement et filtres par catégorie
-- **Ventes & Historique** — Saisie des ventes avec Lieux de vente et déduction FIFO automatique
+- **Sorties & Historique** — Saisie des sorties (ventes/pertes) avec Lieux de vente et déduction FIFO automatique
 - **Exports** — Exportation un-clic en PDF et CSV du catalogue complet, inventaire ou historique
 - **Mobile-First** — Interface réactive, adaptée aux smartphones et tablettes
 
@@ -73,7 +73,7 @@ api_keys
 | `categorie` | nom, actif |
 | `taxe` | nom, taux, **is_default**, actif |
 | `stock` | produit_id, fournisseur_id, quantite_achetee, prix_achat_unitaire |
-| `sortie` | stock_id, **lieu_vente_id**, quantite_sortie, prix_reel |
+| `sortie` | stock_id, **lieu_vente_id**, quantite_sortie, prix_reel, **type** |
 | `fournisseur` | nom, contact, email, telephone, adresse |
 | `utilisateur` | nom, email, mot_de_passe, role |
 | `lieu_vente`| nom, actif |
