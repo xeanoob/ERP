@@ -12,7 +12,21 @@ const PORT = process.env.PORT || 5000;
 
 app.set('trust proxy', 1); 
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            'https://erp-eight-navy.vercel.app',
+            'http://localhost:5173',
+            'http://localhost:4173',
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+}));
 app.use(express.json());
 
 
