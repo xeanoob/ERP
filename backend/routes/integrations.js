@@ -4,9 +4,7 @@ const pool = require('../db');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const crypto = require('crypto');
 
-// --- INTERNAL API (Protected by JWT) ---
 
-// Get all API keys
 router.get('/api-keys', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM api_keys ORDER BY created_at DESC');
@@ -17,16 +15,13 @@ router.get('/api-keys', verifyToken, requireRole('manager'), async (req, res) =>
     }
 });
 
-// Generate new API key for a service
 router.post('/api-keys', verifyToken, requireRole('manager'), async (req, res) => {
     try {
         const { service_name } = req.body;
         if (!service_name) return res.status(400).json({ error: 'Service name required' });
 
-        // Generate a random secure key
         const newKey = crypto.randomBytes(32).toString('hex');
 
-        // Upsert the API key for the service
         const result = await pool.query(`
             INSERT INTO api_keys (service_name, api_key, updated_at) 
             VALUES ($1, $2, CURRENT_TIMESTAMP)
@@ -57,9 +52,6 @@ router.put('/api-keys/:id/toggle', verifyToken, requireRole('manager'), async (r
     }
 });
 
-// --- EXTERNAL WEBHOOKS (Protected by API Key) ---
-
-// Middleware to verify API key
 const verifyApiKey = async (req, res, next) => {
     const apiKey = req.query.api_key || req.headers['x-api-key'];
     if (!apiKey) return res.status(401).json({ error: 'Missing API Key' });
@@ -77,14 +69,11 @@ const verifyApiKey = async (req, res, next) => {
     }
 };
 
-// Simple check to see if integration is active (for browser testing)
 router.get('/eos', (req, res) => {
     res.json({ message: "API d'intégration EOS active. Veuillez utiliser une requête POST avec une api_key valide pour envoyer des données de vente." });
 });
 
-// Webhook for EOS Scale / Caisse
-// Expected payload: { "sales": [{ "nom": "Pomme", "poids_vendu": 12.5, "prix_total": 45.0, "lieu_vente_id": 1 }] }
-// or [{ ... }] array directly
+
 router.post('/eos', verifyApiKey, async (req, res) => {
     const client = await pool.connect();
     try {
@@ -120,35 +109,28 @@ router.post('/eos', verifyApiKey, async (req, res) => {
             const product = prodRes.rows[0];
             const qteVendue = parseFloat(item.poids_vendu);
             
-            // If the scale sends prix_total, use it to calculate prix_reel unit price, otherwise use product active price
             let prixUnitaireReel = parseFloat(product.prix_actif);
             if (item.prix_total) {
                 prixUnitaireReel = parseFloat(item.prix_total) / qteVendue;
             }
 
-            // Get latest stock entry
-            const stockRes = await client.query(`
-                SELECT id, quantite_restante 
-                FROM stock 
-                WHERE produit_id = $1 AND quantite_restante > 0 
+            const entreeRes = await client.query(`
+                SELECT id 
+                FROM entree 
+                WHERE produit_id = $1
                 ORDER BY created_at ASC LIMIT 1
             `, [product.id]);
 
-            let stockId = stockRes.rows.length > 0 ? stockRes.rows[0].id : null;
+            let entreeId = entreeRes.rows.length > 0 ? entreeRes.rows[0].id : null;
 
             // Register the sale (sortie)
             await client.query(`
-                INSERT INTO sortie (stock_id, quantite_sortie, prix_reel, lieu_vente_id, type)
+                INSERT INTO sortie (entree_id, quantite_sortie, prix_reel, lieu_vente_id, type)
                 VALUES ($1, $2, $3, $4, 'vente')
-            `, [stockId, qteVendue, prixUnitaireReel, item.lieu_vente_id || null]);
+            `, [entreeId, qteVendue, prixUnitaireReel, item.lieu_vente_id || null]);
 
             // Update main product stock
             await client.query('UPDATE produit SET quantite_stock = quantite_stock - $1 WHERE id = $2', [qteVendue, product.id]);
-
-            // Deduct from lot if tracking
-            if (stockId) {
-                await client.query('UPDATE stock SET quantite_restante = GREATEST(0, quantite_restante - $1) WHERE id = $2', [qteVendue, stockId]);
-            }
 
             stats.processed++;
         }

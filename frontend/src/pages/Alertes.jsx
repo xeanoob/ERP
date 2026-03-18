@@ -15,7 +15,7 @@ const Alertes = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await axios.get(`${API_URL}/lots/stock`);
+            const res = await axios.get(`${API_URL}/entrees/stock`);
             setProducts(res.data);
             setLoading(false);
         } catch (err) { console.error(err); setLoading(false); }

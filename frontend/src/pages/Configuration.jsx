@@ -28,7 +28,7 @@ const Configuration = () => {
         try {
             const [catRes, taxRes, lieuRes, chargeRes, keysRes] = await Promise.all([
                 axios.get(`${API_URL}/categories`),
-                axios.get(`${API_URL}/taxes`),
+                axios.get(`${API_URL}/tauxTva`),
                 axios.get(`${API_URL}/lieux_vente`),
                 axios.get(`${API_URL}/charges`),
                 axios.get(`${API_URL}/integrations/api-keys`)
@@ -83,7 +83,7 @@ const Configuration = () => {
         if (!newTax.nom || newTax.taux === '') return;
         setSaving(true);
         try {
-            await axios.post(`${API_URL}/taxes`, { nom: newTax.nom, taux: parseFloat(newTax.taux) });
+            await axios.post(`${API_URL}/tauxTva`, { nom: newTax.nom, taux: parseFloat(newTax.taux) });
             setNewTax({ nom: '', taux: '' });
             fetchData();
             toast.success('Taxe ajoutée');
@@ -146,7 +146,7 @@ const Configuration = () => {
     const handleDeleteTax = async (id) => {
         if (!window.confirm('Archiver cette taxe ?')) return;
         try {
-            await axios.delete(`${API_URL}/taxes/${id}`);
+            await axios.delete(`${API_URL}/tauxTva/${id}`);
             fetchData();
             toast.success('Taxe archivée');
         } catch (err) {
@@ -156,7 +156,7 @@ const Configuration = () => {
 
     const handleSetDefaultTax = async (id) => {
         try {
-            await axios.put(`${API_URL}/taxes/${id}/default`);
+            await axios.put(`${API_URL}/tauxTva/${id}/default`);
             fetchData();
             toast.success('Taxe définie par défaut');
         } catch (err) {

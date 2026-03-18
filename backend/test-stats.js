@@ -1,40 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const pool = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const pool = require('./db');
 
-router.get('/stats', verifyToken, async (req, res) => {
+async function test() {
     try {
-        const range = req.query.range || '7days';
+        const range = '7days';
 
         let startDateStr = "CURRENT_DATE - INTERVAL '6 days'";
         let endDateStr = "CURRENT_DATE";
         let prevStartDateStr = "CURRENT_DATE - INTERVAL '13 days'";
         let prevEndDateStr = "CURRENT_DATE - INTERVAL '7 days'";
-
-        if (range === '30days') {
-            startDateStr = "CURRENT_DATE - INTERVAL '29 days'";
-            prevStartDateStr = "CURRENT_DATE - INTERVAL '59 days'";
-            prevEndDateStr = "CURRENT_DATE - INTERVAL '30 days'";
-        } else if (range === 'lastMonth') {
-            startDateStr = "date_trunc('month', CURRENT_DATE - INTERVAL '1 month')::date";
-            endDateStr = "(date_trunc('month', CURRENT_DATE) - INTERVAL '1 day')::date";
-            prevStartDateStr = "date_trunc('month', CURRENT_DATE - INTERVAL '2 month')::date";
-            prevEndDateStr = "(date_trunc('month', CURRENT_DATE - INTERVAL '1 month') - INTERVAL '1 day')::date";
-        } else if (range === '3months') {
-            startDateStr = "CURRENT_DATE - INTERVAL '89 days'";
-            prevStartDateStr = "CURRENT_DATE - INTERVAL '179 days'";
-            prevEndDateStr = "CURRENT_DATE - INTERVAL '90 days'";
-        } else if (range === 'thisYear') {
-            startDateStr = "date_trunc('year', CURRENT_DATE)::date";
-            prevStartDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '1 year')::date";
-            prevEndDateStr = "(date_trunc('year', CURRENT_DATE) - INTERVAL '1 day')::date";
-        } else if (range === 'lastYear') {
-            startDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '1 year')::date";
-            endDateStr = "(date_trunc('year', CURRENT_DATE) - INTERVAL '1 day')::date";
-            prevStartDateStr = "date_trunc('year', CURRENT_DATE - INTERVAL '2 year')::date";
-            prevEndDateStr = "(date_trunc('year', CURRENT_DATE - INTERVAL '1 year') - INTERVAL '1 day')::date";
-        }
 
         const statsQuery = `
             WITH period_totals AS (
@@ -126,7 +99,7 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY p.quantite_stock ASC
         `);
 
-        res.json({
+        const jsonResp = {
             period: {
                 revenue: parseFloat(allStats.revenue),
                 cost: parseFloat(allStats.cost) + (fixed_cost_day * numDays),
@@ -152,11 +125,13 @@ router.get('/stats', verifyToken, async (req, res) => {
                 stock_actuel: parseFloat(r.quantite_stock),
                 seuil: parseFloat(r.seuil_alerte_stock),
             })),
-        });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Server Error' });
-    }
-});
+        };
+        console.log("SUCCESS!", JSON.stringify(jsonResp, null, 2));
 
-module.exports = router;
+    } catch (e) {
+        console.error("ERROR CAUGHT", e);
+    } finally {
+        pool.end();
+    }
+}
+test();

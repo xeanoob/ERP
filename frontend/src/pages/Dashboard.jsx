@@ -36,7 +36,6 @@ const Dashboard = () => {
         fetchStats();
     }, [range]);
 
-    if (!stats || loading) return <div className="text-sm text-gray-500 font-medium p-4">Chargement des données...</div>;
     const data = useMemo(() => ({
         labels: (stats?.trend || []).map(t => {
             const date = new Date(t.jour);
@@ -149,6 +148,7 @@ const Dashboard = () => {
         }
     }), []);
 
+    if (!stats || loading) return <div className="text-sm text-gray-500 font-medium p-4">Chargement des données...</div>;
 
     return (
         <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6">

@@ -26,8 +26,8 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
         const stockRes = await client.query(`
             SELECT * FROM (
                 SELECT s.id, s.quantite_achetee, s.prix_achat_unitaire, s.created_at,
-                    s.quantite_achetee - COALESCE((SELECT SUM(so.quantite_sortie) FROM sortie so WHERE so.stock_id = s.id), 0) as restant
-                FROM stock s
+                    s.quantite_achetee - COALESCE((SELECT SUM(so.quantite_sortie) FROM sortie so WHERE so.entree_id = s.id), 0) as restant
+                FROM entree s
                 WHERE s.produit_id = $1
             ) sub
             WHERE restant > 0
@@ -50,7 +50,7 @@ router.post('/', verifyToken, requireRole('manager', 'vendeur'), async (req, res
             let qtyToTake = Math.min(parseFloat(s.restant), qtyNeeded);
 
             const sortieRes = await client.query(
-                'INSERT INTO sortie (stock_id, lieu_vente_id, quantite_sortie, prix_reel, created_by, type) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
+                'INSERT INTO sortie (entree_id, lieu_vente_id, quantite_sortie, prix_reel, created_by, type) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
                 [s.id, lieu_vente_id, qtyToTake, prix_reel, req.user.id, type]
             );
 
@@ -81,7 +81,7 @@ router.get('/history', verifyToken, requireRole('manager', 'vendeur'), async (re
         const query = `
             SELECT so.*, s.produit_id, p.nom as produit_nom, s.prix_achat_unitaire, lv.nom as lieu_vente_nom
             FROM sortie so
-            JOIN stock s ON so.stock_id = s.id
+            JOIN entree s ON so.entree_id = s.id
             JOIN produit p ON s.produit_id = p.id
             LEFT JOIN lieu_vente lv ON so.lieu_vente_id = lv.id
             ORDER BY so.created_at DESC

@@ -28,10 +28,10 @@ router.get('/', verifyToken, async (req, res) => {
         const total = parseInt(countRes.rows[0].count);
 
         const dataRes = await pool.query(
-            `SELECT p.*, c.nom as categorie_nom, t.nom as taxe_nom, t.taux as taxe_taux 
+            `SELECT p.*, c.nom as categorie_nom, t.nom as tauxTva_nom, t.taux as tauxTva_taux 
              FROM produit p 
              LEFT JOIN categorie c ON p.categorie_id = c.id 
-             LEFT JOIN taxe t ON p.taxe_id = t.id
+             LEFT JOIN tauxTva t ON p.taux_tva_id = t.id
              ${whereClause} 
              ORDER BY p.nom ASC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
             [...params, limitNum, offset]
@@ -50,10 +50,10 @@ router.get('/', verifyToken, async (req, res) => {
 
 router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
-        const { nom, categorie_id, taxe_id, origine, unite, prix_actif, seuil_alerte_stock } = req.body;
+        const { nom, categorie_id, taux_tva_id, origine, unite, prix_actif, seuil_alerte_stock } = req.body;
         const result = await pool.query(
-            'INSERT INTO produit (nom, categorie_id, taxe_id, origine, unite, prix_actif, seuil_alerte_stock, created_by) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-            [nom, categorie_id || null, taxe_id || null, origine, unite || 'kg', prix_actif || 0, seuil_alerte_stock || 10, req.user.id]
+            'INSERT INTO produit (nom, categorie_id, taux_tva_id, origine, unite, prix_actif, seuil_alerte_stock, created_by) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [nom, categorie_id || null, taux_tva_id || null, origine, unite || 'kg', prix_actif || 0, seuil_alerte_stock || 10, req.user.id]
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -66,10 +66,10 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
 router.put('/:id', verifyToken, requireRole('manager', 'stock'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { nom, categorie_id, taxe_id, origine, unite, prix_actif, seuil_alerte_stock } = req.body;
+        const { nom, categorie_id, taux_tva_id, origine, unite, prix_actif, seuil_alerte_stock } = req.body;
         const result = await pool.query(
-            'UPDATE produit SET nom=$1, categorie_id=$2, taxe_id=$3, origine=$4, unite=$5, prix_actif=$6, seuil_alerte_stock=$7, updated_by=$8 WHERE id=$9 RETURNING *',
-            [nom, categorie_id, taxe_id, origine, unite, prix_actif, seuil_alerte_stock, req.user.id, id]
+            'UPDATE produit SET nom=$1, categorie_id=$2, taux_tva_id=$3, origine=$4, unite=$5, prix_actif=$6, seuil_alerte_stock=$7, updated_by=$8 WHERE id=$9 RETURNING *',
+            [nom, categorie_id, taux_tva_id, origine, unite, prix_actif, seuil_alerte_stock, req.user.id, id]
         );
         if (result.rows.length === 0) return res.status(404).json('Product not found');
         res.json(result.rows[0]);

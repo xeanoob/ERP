@@ -16,14 +16,14 @@ const Catalogue = () => {
     const [taxes, setTaxes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
-    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', taxe_id: '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
+    const [newProduct, setNewProduct] = useState({ nom: '', categorie_id: '', taux_tva_id: '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
     const [message, setMessage] = useState('');
     const [editingCell, setEditingCell] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [search, setSearch] = useState('');
     const [showEditModal, setShowEditModal] = useState(false);
     const [productToEdit, setProductToEdit] = useState(null);
-    const [editForm, setEditForm] = useState({ nom: '', categorie_id: '', taxe_id: '', origine: '', unite: '', prix_actif: '', seuil_alerte_stock: '' });
+    const [editForm, setEditForm] = useState({ nom: '', categorie_id: '', taux_tva_id: '', origine: '', unite: '', prix_actif: '', seuil_alerte_stock: '' });
 
     const fetchProducts = useCallback(async (page = 1, searchTerm = '') => {
         try {
@@ -39,7 +39,7 @@ const Catalogue = () => {
         try {
             const [catRes, taxRes] = await Promise.all([
                 axios.get(`${API_URL}/categories`),
-                axios.get(`${API_URL}/taxes`)
+                axios.get(`${API_URL}/tauxTva`)
             ]);
             setCategories(catRes.data);
             setTaxes(taxRes.data);
@@ -47,7 +47,7 @@ const Catalogue = () => {
             // Set default tax if available
             const defaultTax = taxRes.data.find(t => t.is_default);
             if (defaultTax) {
-                setNewProduct(prev => ({ ...prev, taxe_id: defaultTax.id }));
+                setNewProduct(prev => ({ ...prev, taux_tva_id: defaultTax.id }));
             }
         } catch (err) { console.error(err); }
     };
@@ -69,7 +69,7 @@ const Catalogue = () => {
         try {
             await axios.post(`${API_URL}/products`, newProduct);
             const defaultTax = taxes.find(t => t.is_default);
-            setNewProduct({ nom: '', categorie_id: '', taxe_id: defaultTax ? defaultTax.id : '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
+            setNewProduct({ nom: '', categorie_id: '', taux_tva_id: defaultTax ? defaultTax.id : '', origine: '', unite: 'kg', prix_actif: '', seuil_alerte_stock: '10' });
             fetchProducts(pagination.page, search);
             toast.success('Produit ajouté avec succès');
         } catch (err) {
@@ -83,7 +83,7 @@ const Catalogue = () => {
         setEditForm({
             nom: p.nom || '',
             categorie_id: p.categorie_id || '',
-            taxe_id: p.taxe_id || '',
+            taux_tva_id: p.taux_tva_id || '',
             origine: p.origine || '',
             unite: p.unite || 'kg',
             prix_actif: p.prix_actif || '',
@@ -110,7 +110,7 @@ const Catalogue = () => {
             p.id,
             p.nom,
             p.categorie_nom || '',
-            p.taxe_nom ? `${p.taxe_nom} (${p.taxe_taux}%)` : '',
+            p.tauxTva_nom ? `${p.tauxTva_nom} (${p.tauxTva_taux}%)` : '',
             p.origine || '',
             p.unite || 'kg',
             p.quantite_stock,
@@ -154,7 +154,7 @@ const Catalogue = () => {
             p.id,
             p.nom,
             p.categorie_nom || '-',
-            p.taxe_nom ? `${p.taxe_taux}%` : '-',
+            p.tauxTva_nom ? `${p.tauxTva_taux}%` : '-',
             p.origine || '-',
             p.unite || 'kg',
             p.quantite_stock,
@@ -212,7 +212,7 @@ const Catalogue = () => {
             };
             
             payload.categorie_id = payload.categorie_id || null;
-            payload.taxe_id = payload.taxe_id || null;
+            payload.taux_tva_id = payload.taux_tva_id || null;
 
             await axios.put(`${API_URL}/products/${p.id}`, payload);
             toast.success('Produit mis à jour');
@@ -254,7 +254,7 @@ const Catalogue = () => {
                         </div>
                         <div className="col-span-1">
                             <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Taxe</label>
-                            <select value={newProduct.taxe_id} onChange={e => setNewProduct({ ...newProduct, taxe_id: e.target.value })}
+                            <select value={newProduct.taux_tva_id} onChange={e => setNewProduct({ ...newProduct, taux_tva_id: e.target.value })}
                                 className="w-full bg-white border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900">
                                 <option value="">(Aucune)</option>
                                 {taxes.map(t => <option key={t.id} value={t.id}>{t.nom} ({t.taux}%)</option>)}
@@ -397,14 +397,14 @@ const Catalogue = () => {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3 text-sm" onDoubleClick={() => startEdit(p, 'taxe_id')}>
-                                        {editingCell?.id === p.id && editingCell?.field === 'taxe_id' ? (
+                                    <td className="px-4 py-3 text-sm" onDoubleClick={() => startEdit(p, 'taux_tva_id')}>
+                                        {editingCell?.id === p.id && editingCell?.field === 'taux_tva_id' ? (
                                             <select autoFocus value={editValue || ''} onChange={e => { setEditValue(e.target.value); saveEdit(p, e.target.value); }} onBlur={() => setEditingCell(null)} className="w-full bg-white border border-gray-900 rounded px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-gray-900">
                                                 <option value="">Aucune</option>
                                                 {taxes.map(t => <option key={t.id} value={t.id}>{t.nom}</option>)}
                                             </select>
-                                        ) : p.taxe_nom ? (
-                                            <span className="cursor-pointer hover:underline text-xs text-blue-600 font-medium" title="Double clic pour modifier">{p.taxe_nom} ({p.taxe_taux}%)</span>
+                                        ) : p.tauxTva_nom ? (
+                                            <span className="cursor-pointer hover:underline text-xs text-blue-600 font-medium" title="Double clic pour modifier">{p.tauxTva_nom} ({p.tauxTva_taux}%)</span>
                                         ) : <span className="cursor-pointer hover:underline text-gray-400" title="Double clic pour modifier">-</span>}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-gray-600" onDoubleClick={() => startEdit(p, 'origine')}>

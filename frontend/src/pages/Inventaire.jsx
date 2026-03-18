@@ -45,7 +45,7 @@ const Inventaire = () => {
 
     const fetchStocks = async (q = '') => {
         try {
-            const res = await axios.get(`${API_URL}/lots/stock`, { params: { search: q } });
+            const res = await axios.get(`${API_URL}/entrees/stock`, { params: { search: q } });
             setStocks(res.data);
             setLoading(false);
         } catch (err) { console.error(err); setLoading(false); }
@@ -70,7 +70,7 @@ const Inventaire = () => {
     const handleAddLot = async (e) => {
         e.preventDefault();
         try {
-            await axios.post(`${API_URL}/lots`, newLot);
+            await axios.post(`${API_URL}/entrees`, newLot);
             setShowModal(false);
             setNewLot({ produit_id: '', fournisseur_id: '', quantite_achetee: '', prix_achat_unitaire: '' });
             fetchStocks();
@@ -130,7 +130,7 @@ const Inventaire = () => {
             await axios.put(`${API_URL}/products/${productId}`, {
                 nom: product.nom,
                 categorie_id: product.categorie_id,
-                taxe_id: product.taxe_id,
+                taux_tva_id: product.taux_tva_id,
                 origine: product.origine || '',
                 unite: product.unite || 'kg',
                 prix_actif: product.prix_actif,
@@ -160,7 +160,7 @@ const Inventaire = () => {
             await axios.put(`${API_URL}/products/${productId}`, {
                 nom: product.nom,
                 categorie_id: product.categorie_id,
-                taxe_id: product.taxe_id,
+                taux_tva_id: product.taux_tva_id,
                 origine: product.origine || '',
                 unite: product.unite || 'kg',
                 seuil_alerte_stock: product.seuil_alerte_stock,

@@ -28,10 +28,10 @@ router.get('/', verifyToken, requireRole('manager', 'stock'), async (req, res) =
         let query = `
             SELECT s.*, p.nom as produit_nom, f.nom as fournisseur_nom,
                    s.quantite_achetee - COALESCE(SUM(so.quantite_sortie), 0) as quantite_restante
-            FROM stock s 
+            FROM entree s 
             JOIN produit p ON s.produit_id = p.id
             LEFT JOIN fournisseur f ON s.fournisseur_id = f.id
-            LEFT JOIN sortie so ON s.id = so.stock_id
+            LEFT JOIN sortie so ON s.id = so.entree_id
         `;
         const params = [];
         if (product_id) {
@@ -57,7 +57,7 @@ router.post('/', verifyToken, requireRole('manager', 'stock'), async (req, res) 
         }
         await client.query('BEGIN');
         const newStock = await client.query(
-            'INSERT INTO stock (produit_id, fournisseur_id, quantite_achetee, prix_achat_unitaire) VALUES($1, $2, $3, $4) RETURNING *',
+            'INSERT INTO entree (produit_id, fournisseur_id, quantite_achetee, prix_achat_unitaire) VALUES($1, $2, $3, $4) RETURNING *',
             [produit_id, fournisseur_id || null, quantite_achetee, prix_achat_unitaire]
         );
         await client.query('UPDATE produit SET quantite_stock = quantite_stock + $1 WHERE id = $2', [quantite_achetee, produit_id]);
